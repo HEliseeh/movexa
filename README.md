@@ -1,11 +1,11 @@
-# movexa-deployment
+# MOVEXA
 
 Script de deploiement des entités de movexa
 
 
 ##Structures
 
-movexa-deployment/
+movexa/
   |
   |---- registry/
   |      |__ central-server-config/application.yml
