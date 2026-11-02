@@ -1,0 +1,157 @@
+<div class="dt-card">
+
+  <!-- ======================================================
+       TABLEAU
+  ====================================================== -->
+  <div class="dt-wrapper" role="region" tabindex="0" [attr.aria-label]="'Tableau de données'">
+    <table class="dt-table">
+
+      <!-- ---- En-têtes ---- -->
+      <thead>
+        <tr>
+          @for (col of dataCols(); track col.key) {
+            <th
+              scope="col"
+              [style.width]="col.width ?? null"
+              [class.dt-th-sortable]="col.sortable"
+              (click)="col.sortable ? toggleSort(col.key) : null"
+              [attr.aria-sort]="
+                getSortDir(col.key) === 'asc'  ? 'ascending'  :
+                getSortDir(col.key) === 'desc' ? 'descending' : 'none'
+              "
+            >
+              <span class="dt-th-inner">
+                {{ col.label }}
+                @if (col.sortable) {
+                  <span class="dt-sort-icon" aria-hidden="true">
+                    @if (getSortDir(col.key) === 'asc') {
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                    } @else if (getSortDir(col.key) === 'desc') {
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    } @else {
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"><polyline points="18 15 12 9 6 15"/></svg>
+                    }
+                  </span>
+                }
+              </span>
+            </th>
+          }
+          @if (showRowAction()) {
+            <th scope="col" class="dt-th-action"><span class="sr-only">Actions</span></th>
+          }
+        </tr>
+      </thead>
+
+      <!-- ---- Corps ---- -->
+      <tbody>
+        @if (visibleRows().length === 0) {
+          <tr>
+            <td [attr.colspan]="dataCols().length + (showRowAction() ? 1 : 0)" class="dt-empty">
+              {{ emptyMessage() }}
+            </td>
+          </tr>
+        }
+
+        @for (row of visibleRows(); track $index) {
+          <tr class="dt-row" (click)="onRowClick(row)" tabindex="0" (keydown.enter)="onRowClick(row)">
+
+            @for (col of dataCols(); track col.key) {
+              <td [class.dt-td-muted]="col.muted">
+
+                <!-- avatar-text -->
+                @if (col.type === 'avatar-text') {
+                  <div class="dt-avatar-cell">
+                    <span class="dt-avatar" aria-hidden="true">{{ col.avatarFn!(row) }}</span>
+                    <div class="dt-avatar-info">
+                      <span class="dt-avatar-main">{{ cellValue(col, row) }}</span>
+                      @if (col.subValueFn) {
+                        <span class="dt-avatar-sub">{{ col.subValueFn(row) }}</span>
+                      }
+                    </div>
+                  </div>
+                }
+
+                <!-- badge -->
+                @if (col.type === 'badge') {
+                  <span class="dt-badge" [ngClass]="col.badgeClassFn!(row)">
+                    @if (col.badgeIconFn && col.badgeIconFn(row)) {
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path [attr.d]="col.badgeIconFn(row)" />
+                      </svg>
+                    }
+                    {{ cellValue(col, row) }}
+                  </span>
+                }
+
+                <!-- text / date -->
+                @if (col.type === 'text' || col.type === 'date') {
+                  {{ cellValue(col, row) }}
+                }
+
+              </td>
+            }
+
+            <!-- Colonne action -->
+            @if (showRowAction()) {
+              <td class="dt-td-action">
+                <button
+                  class="dt-btn-action"
+                  type="button"
+                  (click)="onRowAction(row, $event)"
+                  aria-label="Voir la fiche"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </button>
+              </td>
+            }
+
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ======================================================
+       PIED : compteur + pagination
+  ====================================================== -->
+  <div class="dt-footer">
+    <span class="dt-count" aria-live="polite">
+      @if (total() > 0) {
+        {{ pageStart() }}–{{ pageEnd() }} sur {{ total() }} ligne{{ total() > 1 ? 's' : '' }}
+      } @else {
+        0 résultat
+      }
+    </span>
+
+    <div class="dt-pagination" role="navigation" aria-label="Pagination">
+      <button
+        class="dt-btn-page"
+        type="button"
+        (click)="prevPage()"
+        [disabled]="page() === 1"
+        aria-label="Page précédente"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+
+      <span class="dt-page-indicator">{{ page() }} / {{ pageCount() }}</span>
+
+      <button
+        class="dt-btn-page"
+        type="button"
+        (click)="nextPage()"
+        [disabled]="page() === pageCount()"
+        aria-label="Page suivante"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+</div>

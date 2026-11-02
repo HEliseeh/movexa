@@ -1,0 +1,76 @@
+<!-- ================================================================
+     CONNECTED LAYOUT
+     Topbar fixe (56 px) + MatSidenav mode side + contenu scrollable
+     ================================================================ -->
+
+<!-- Topbar fixe — écoute menuToggle pour basculer la sidebar -->
+<app-topbar (menuToggle)="toggle()" />
+
+<!-- Conteneur sidenav — commence sous la topbar -->
+<mat-sidenav-container
+  class="layout-container"
+  [style.marginTop.px]="TOPBAR_HEIGHT"
+  autosize
+>
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <mat-sidenav
+    #sidenav
+    class="layout-sidenav"
+    [class.sidenav--collapsed]="!isExpanded()"
+    mode="side"
+    [opened]="true"
+    fixedInViewport="false"
+    position="start"
+  >
+
+    <!-- Titre / logo réduit -->
+    <div class="sidenav-brand" [class.sidenav-brand--collapsed]="!isExpanded()">
+      @if (isExpanded()) {
+        <span class="sidenav-brand-text">movexa</span>
+      } @else {
+        <span class="sidenav-brand-icon">M</span>
+      }
+    </div>
+
+    <!-- Items de navigation -->
+    <mat-nav-list class="sidenav-nav">
+      @for (item of menuItems; track item.id) {
+        <app-menu-component [item]="item" [expanded]="isExpanded()" />
+      }
+    </mat-nav-list>
+
+    <!-- Bouton collapse en bas -->
+    <div class="sidenav-footer">
+      <button
+        class="sidenav-collapse-btn"
+        type="button"
+        (click)="toggle()"
+        [attr.aria-label]="isExpanded() ? 'Réduire le menu' : 'Étendre le menu'"
+        [title]="isExpanded() ? 'Réduire' : 'Étendre'"
+      >
+        @if (isExpanded()) {
+          <!-- chevron gauche -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          <span class="collapse-label">Réduire</span>
+        } @else {
+          <!-- chevron droit -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        }
+      </button>
+    </div>
+
+  </mat-sidenav>
+
+  <!-- ===================== CONTENU ===================== -->
+  <mat-sidenav-content class="layout-content">
+    <router-outlet />
+  </mat-sidenav-content>
+
+</mat-sidenav-container>

@@ -1,0 +1,145 @@
+<div class="dashboard">
+
+  <!-- ===== EN-TÊTE ===== -->
+  <header class="dash-header">
+    <div class="dash-title-block">
+      <h1 class="dash-title">Tableau de bord</h1>
+      <p class="dash-subtitle">
+        <span class="gym-name">{{ gymName() }}</span>
+        <span class="separator" aria-hidden="true">·</span>
+        <span class="dash-date">{{ today() }}</span>
+      </p>
+    </div>
+
+    <div class="dash-search">
+      <label class="search-wrapper" for="member-search">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          id="member-search"
+          type="search"
+          class="search-input"
+          placeholder="Rechercher un adhérent"
+          aria-label="Rechercher un adhérent"
+        />
+      </label>
+    </div>
+  </header>
+
+  <!-- ===== KPI CARDS ===== -->
+  <section class="kpi-grid" aria-label="Indicateurs clés">
+    @for (kpi of kpis; track kpi.label) {
+      <article class="kpi-card">
+        <span class="kpi-label">{{ kpi.label }}</span>
+        <span class="kpi-value">{{ kpi.value }}</span>
+        <span
+          class="kpi-sub"
+          [class.positive]="kpi.subPositive === true"
+          [class.negative]="kpi.subPositive === false"
+        >{{ kpi.sub }}</span>
+      </article>
+    }
+  </section>
+
+  <!-- ===== LIGNE CENTRALE : graphe + renouvellements ===== -->
+  <div class="middle-row">
+
+    <!-- Graphe fréquentation -->
+    <section class="card freq-card" aria-label="Fréquentation des 7 derniers jours">
+      <div class="card-header">
+        <h2 class="card-title">Fréquentation</h2>
+        <span class="card-meta">7 derniers jours</span>
+      </div>
+
+      <div class="bar-chart" role="img" aria-label="Graphe en barres de la fréquentation hebdomadaire">
+        @for (point of freqData; track point.day) {
+          <div class="bar-col">
+            <div
+              class="bar"
+              [class.bar-today]="point.isToday"
+              [style.height.%]="point.value"
+              role="presentation"
+            ></div>
+            <span class="bar-label" [class.label-today]="point.isToday">{{ point.day }}</span>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- À renouveler -->
+    <section class="card renewal-card" aria-label="Adhérents à renouveler">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">À renouveler</h2>
+          <p class="card-subtitle">Relance par WhatsApp ou SMS</p>
+        </div>
+      </div>
+
+      <ul class="renewal-list" role="list">
+        @for (r of renewals; track r.name) {
+          <li class="renewal-item">
+            <span class="renewal-avatar" aria-hidden="true">{{ r.initials }}</span>
+            <div class="renewal-info">
+              <span class="renewal-name">{{ r.name }}</span>
+              <span class="renewal-date">Expire le {{ r.expiresOn }}</span>
+            </div>
+            <button class="btn-relance" type="button">Relancer</button>
+          </li>
+        }
+      </ul>
+    </section>
+
+  </div>
+
+  <!-- ===== DERNIERS ACCÈS ===== -->
+  <section class="card access-card" aria-label="Derniers accès enregistrés">
+    <div class="card-header">
+      <h2 class="card-title">Derniers accès</h2>
+      <a href="#" class="link-tout-voir">Tout voir</a>
+    </div>
+
+    <div class="table-wrapper" role="region" aria-label="Tableau des derniers accès" tabindex="0">
+      <table class="access-table">
+        <thead>
+          <tr>
+            <th scope="col">ADHÉRENT</th>
+            <th scope="col">FORFAIT</th>
+            <th scope="col">HEURE</th>
+            <th scope="col">STATUT</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of recentAccess; track entry.name + entry.time) {
+            <tr>
+              <td class="td-name">{{ entry.name }}</td>
+              <td class="td-plan">{{ entry.plan }}</td>
+              <td class="td-time">{{ entry.time }}</td>
+              <td class="td-status">
+                @if (entry.valid) {
+                  <span class="badge badge-valid">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    Accès validé
+                  </span>
+                } @else {
+                  <span class="badge badge-denied">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                    Accès refusé
+                  </span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<!-- FAB actions rapides — spécifique à cet écran -->
+<app-fab [actions]="fabActions" (actionTriggered)="onFabAction($event)" />

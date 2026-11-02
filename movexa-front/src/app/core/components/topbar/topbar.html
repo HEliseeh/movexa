@@ -1,0 +1,42 @@
+<mat-toolbar class="topbar">
+
+  <!-- Gauche : hamburger + logo -->
+  <div class="topbar-left">
+    <button
+      mat-icon-button
+      class="topbar-menu-btn"
+      (click)="menuToggle.emit()"
+      aria-label="Ouvrir/fermer le menu"
+      matTooltip="Menu"
+    >
+      <mat-icon>menu</mat-icon>
+    </button>
+
+    <span class="topbar-logo" aria-label="Movexa">movexa</span>
+  </div>
+
+  <!-- Centre : nom de l'app (responsive, masqué sur mobile) -->
+  <span class="topbar-spacer"></span>
+
+  <!-- Droite : utilisateur + déconnexion -->
+  <div class="topbar-right">
+    @if (user()) {
+      <div class="topbar-user">
+        <span class="topbar-avatar" aria-hidden="true">{{ initials }}</span>
+        <span class="topbar-username">{{ displayName }}</span>
+      </div>
+    }
+
+    <button
+      mat-icon-button
+      class="topbar-logout-btn"
+      (click)="logout()"
+      aria-label="Se déconnecter"
+      matTooltip="Déconnexion"
+      matTooltipPosition="below"
+    >
+      <mat-icon>logout</mat-icon>
+    </button>
+  </div>
+
+</mat-toolbar>

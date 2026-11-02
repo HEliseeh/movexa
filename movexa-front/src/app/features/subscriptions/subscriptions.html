@@ -1,0 +1,101 @@
+<div class="page">
+
+  <!-- ===== EN-TÊTE ===== -->
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Abonnements</h1>
+      <p class="page-subtitle">Forfaits proposés par {{ gymName }}</p>
+    </div>
+    <button class="btn-primary" type="button">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Nouveau forfait
+    </button>
+  </header>
+
+  <!-- ===== CARTES FORFAITS ===== -->
+  <section aria-label="Forfaits disponibles">
+    <div class="plans-grid">
+      @for (plan of plans; track plan.id) {
+        <article class="plan-card">
+          <div class="plan-top">
+            <span class="plan-name">{{ plan.name }}</span>
+            <span class="plan-subscribers">{{ plan.subscriberCount }} abonné{{ plan.subscriberCount > 1 ? 's' : '' }}</span>
+          </div>
+
+          <div class="plan-price">
+            <span class="price-amount">{{ plan.price }}</span>
+            <span class="price-currency">&nbsp;FCFA</span>
+            <span class="price-period">&nbsp;/ {{ plan.period }}</span>
+          </div>
+
+          <ul class="plan-features" role="list">
+            @for (feature of plan.features; track feature.label) {
+              <li class="plan-feature" [class.feature-excluded]="!feature.included">
+                @if (feature.included) {
+                  <svg class="feature-icon feature-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                } @else {
+                  <svg class="feature-icon feature-cross" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                }
+                {{ feature.label }}
+              </li>
+            }
+          </ul>
+
+          <button class="btn-modify" type="button">Modifier</button>
+        </article>
+      }
+    </div>
+  </section>
+
+  <!-- ===== PAIEMENTS RÉCENTS ===== -->
+  <section class="card" aria-label="Paiements récents">
+    <div class="card-header">
+      <h2 class="card-title">Paiements récents</h2>
+      <a href="#" class="link-tout-voir">Tout voir</a>
+    </div>
+
+    <div class="table-wrapper" role="region" aria-label="Tableau des paiements récents" tabindex="0">
+      <table class="payments-table">
+        <thead>
+          <tr>
+            <th scope="col">ADHÉRENT</th>
+            <th scope="col">FORFAIT</th>
+            <th scope="col">MONTANT</th>
+            <th scope="col">MOYEN</th>
+            <th scope="col">STATUT</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of payments; track p.id) {
+            <tr>
+              <td>
+                <div class="member-cell">
+                  <span class="avatar" aria-hidden="true">{{ p.initials }}</span>
+                  <span class="member-name">{{ p.memberName }}</span>
+                </div>
+              </td>
+              <td class="td-muted">{{ p.plan }}</td>
+              <td class="td-amount">{{ p.amount }}</td>
+              <td class="td-muted">{{ p.method }}</td>
+              <td>
+                <span class="badge" [class.badge-paid]="p.status === 'Payé'" [class.badge-pending]="p.status === 'En attente'" [class.badge-failed]="p.status === 'Échoué'">
+                  @if (p.status === 'Payé') {
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                  } @else if (p.status === 'En attente') {
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  } @else {
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  }
+                  {{ p.status }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>

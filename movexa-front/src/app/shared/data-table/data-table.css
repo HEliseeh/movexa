@@ -1,0 +1,267 @@
+/* ============================================================
+   DATA TABLE — composant générique Movexa
+   Inspiré du style Calypso : lignes denses, en-têtes fixes,
+   tri par colonne, scroll horizontal.
+   ============================================================ */
+
+/* ---- Conteneur card ---- */
+.dt-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Scroll horizontal ---- */
+.dt-wrapper {
+  overflow-x: auto;
+  /* scrollbar discrète */
+}
+
+.dt-wrapper::-webkit-scrollbar       { height: 5px; }
+.dt-wrapper::-webkit-scrollbar-track { background: transparent; }
+.dt-wrapper::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+/* ---- Table ---- */
+.dt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+/* ---- En-têtes ---- */
+.dt-table th {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  background: var(--color-bg-deep);
+  border-bottom: 1px solid var(--color-border);
+  user-select: none;
+}
+
+.dt-th-sortable {
+  cursor: pointer;
+}
+
+.dt-th-sortable:hover .dt-th-inner {
+  color: var(--color-text);
+}
+
+.dt-th-action {
+  width: 48px;
+  min-width: 48px;
+}
+
+.dt-th-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: inherit;
+}
+
+.dt-sort-icon {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-muted);
+  transition: color var(--transition-fast);
+}
+
+.dt-th-sortable:hover .dt-sort-icon {
+  color: var(--color-primary);
+}
+
+/* ---- Lignes ---- */
+.dt-row {
+  cursor: pointer;
+  outline: none;
+  transition: background var(--transition-fast);
+}
+
+.dt-row:hover td,
+.dt-row:focus-visible td {
+  background: var(--color-surface-raised);
+}
+
+.dt-table td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  vertical-align: middle;
+}
+
+.dt-row:last-child td {
+  border-bottom: none;
+}
+
+.dt-td-muted {
+  color: var(--color-text-muted) !important;
+}
+
+/* ---- Cellule avatar + texte ---- */
+.dt-avatar-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dt-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.dt-avatar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.dt-avatar-main {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dt-avatar-sub {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Badge ---- */
+.dt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+/* ---- Colonne action (chevron) ---- */
+.dt-td-action {
+  width: 48px;
+  min-width: 48px;
+  text-align: right;
+}
+
+.dt-btn-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.dt-btn-action:hover {
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+}
+
+/* ---- Ligne vide ---- */
+.dt-empty {
+  text-align: center;
+  padding: var(--space-8) var(--space-4) !important;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  border-bottom: none !important;
+}
+
+/* ---- Pied de tableau ---- */
+.dt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-deep);
+  flex-shrink: 0;
+}
+
+.dt-count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dt-pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dt-page-indicator {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 52px;
+  text-align: center;
+}
+
+.dt-btn-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.dt-btn-page:hover:not(:disabled) {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.dt-btn-page:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ---- Accessibilité ---- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

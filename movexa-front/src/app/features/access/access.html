@@ -1,0 +1,134 @@
+<div class="page">
+
+  <!-- ===== EN-TÊTE ===== -->
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Contrôle d'accès</h1>
+      <p class="page-subtitle">Lecteurs QR de {{ gymName }}</p>
+    </div>
+    <button class="btn-primary" type="button">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Créer un accès invité
+    </button>
+  </header>
+
+  <!-- ===== KPI CARDS ===== -->
+  <section class="kpi-grid" aria-label="Indicateurs accès">
+    <article class="kpi-card">
+      <span class="kpi-label">ACCÈS VALIDÉS AUJOURD'HUI</span>
+      <span class="kpi-value kpi-valid">{{ validatedToday }}</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">ACCÈS REFUSÉS AUJOURD'HUI</span>
+      <span class="kpi-value kpi-refused">{{ refusedToday }}</span>
+    </article>
+    <article class="kpi-card">
+      <span class="kpi-label">LECTEURS EN LIGNE</span>
+      <span class="kpi-value">{{ readersOnline }}<span class="kpi-total">/{{ readersTotal }}</span></span>
+    </article>
+  </section>
+
+  <!-- ===== LIGNE CENTRALE ===== -->
+  <div class="middle-row">
+
+    <!-- Journal en direct -->
+    <section class="card journal-card" aria-label="Journal des accès en direct">
+      <div class="card-header">
+        <h2 class="card-title">Journal en direct</h2>
+        <button class="btn-export" type="button">Exporter</button>
+      </div>
+
+      <div class="table-wrapper" tabindex="0" role="region" aria-label="Journal des entrées">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th scope="col">HEURE</th>
+              <th scope="col">ADHÉRENT</th>
+              <th scope="col">LECTEUR</th>
+              <th scope="col">RÉSULTAT</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (log of logs; track log.id) {
+              <tr>
+                <td class="td-time">{{ log.time }}</td>
+                <td class="td-name">{{ log.name }}</td>
+                <td class="td-muted">{{ log.reader }}</td>
+                <td>
+                  <span class="result-badge" [ngClass]="resultClass(log.result)">
+                    @if (log.result === 'Validé') {
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                    } @else {
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    }
+                    {{ log.result }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Colonne droite : règles + lecteurs -->
+    <div class="right-col">
+
+      <!-- Règles d'accès -->
+      <section class="card rules-card" aria-label="Règles d'accès">
+        <div class="card-header">
+          <h2 class="card-title">Règles d'accès</h2>
+        </div>
+        <ul class="rules-list" role="list">
+          @for (rule of rules(); track rule.id) {
+            <li class="rule-item">
+              <div class="rule-info">
+                <span class="rule-label">{{ rule.label }}</span>
+                <span class="rule-desc">{{ rule.description }}</span>
+              </div>
+              @if (rule.id === 'qr-validity') {
+                <button class="btn-link-sm" type="button">Modifier</button>
+              } @else {
+                <button
+                  class="toggle"
+                  type="button"
+                  role="switch"
+                  [attr.aria-checked]="rule.enabled"
+                  [class.toggle-on]="rule.enabled"
+                  (click)="toggleRule(rule.id)"
+                  [attr.aria-label]="rule.label"
+                ></button>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+
+      <!-- Lecteurs -->
+      <section class="card readers-card" aria-label="Liste des lecteurs QR">
+        <div class="card-header">
+          <h2 class="card-title">Lecteurs</h2>
+        </div>
+        <ul class="readers-list" role="list">
+          @for (reader of readers; track reader.id) {
+            <li class="reader-item">
+              <span class="reader-name">{{ reader.name }}</span>
+              <span class="reader-badge" [ngClass]="readerClass(reader.status)">
+                @if (reader.status === 'En ligne') {
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                } @else {
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                }
+                {{ reader.status }}
+              </span>
+            </li>
+          }
+        </ul>
+      </section>
+
+    </div>
+  </div>
+
+</div>

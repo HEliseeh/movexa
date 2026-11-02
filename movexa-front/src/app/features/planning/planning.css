@@ -1,0 +1,318 @@
+/* ============================================================
+   PAGE COURS & PLANNING
+   ============================================================ */
+
+.page {
+  padding: var(--space-6);
+  max-width: 1400px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* ---- En-tête ---- */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.page-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
+.page-subtitle {
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.week-nav {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.btn-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.btn-nav:hover {
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  white-space: nowrap;
+}
+
+.btn-primary:hover { background: var(--color-primary-hover); }
+.btn-primary:active { background: var(--color-primary-active); }
+
+/* ---- Card ---- */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.card-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.link-action {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.link-action:hover { text-decoration: underline; }
+
+/* ---- Calendrier ---- */
+.calendar-card { overflow: visible; }
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+/* En-têtes jours */
+.day-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-2);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.day-header:last-child { border-right: none; }
+
+.day-header:hover { background: var(--color-surface-raised); }
+
+.day-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.day-number {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.day-header.day-today .day-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.day-header.day-selected {
+  background: var(--color-surface-raised);
+}
+
+/* Corps calendrier */
+.calendar-body {
+  overflow-x: auto;
+}
+
+.calendar-courses {
+  min-height: 260px;
+  align-items: start;
+}
+
+.day-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2);
+  border-right: 1px solid var(--color-border);
+  min-height: 260px;
+  transition: background var(--transition-fast);
+}
+
+.day-col:last-child { border-right: none; }
+
+.day-col.col-selected { background: rgb(200 164 126 / 0.04); }
+
+.no-course {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  text-align: center;
+  padding-top: var(--space-4);
+}
+
+/* Carte cours */
+.course-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-2);
+  background: var(--color-surface-raised);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.course-card:hover { background: var(--color-border); }
+
+.course-card.status-complet {
+  border-left-color: var(--color-warning);
+  opacity: 0.85;
+}
+
+.course-card.status-annule {
+  border-left-color: var(--color-danger);
+  opacity: 0.6;
+}
+
+.course-time {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+}
+
+.course-card.status-complet .course-time { color: var(--color-warning); }
+
+.course-name {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.course-coach,
+.course-enrolled {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.course-badge-complet {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 0.65rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+  border-radius: var(--radius-full);
+  padding: 1px var(--space-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ---- Section coachs ---- */
+.coachs-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.coach-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.coach-item:last-child { border-bottom: none; }
+
+.member-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.coach-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.link-courses {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.link-courses:hover { text-decoration: underline; }
+
+/* ---- Responsive ---- */
+@media (max-width: 900px) {
+  .page { padding: var(--space-4); }
+
+  .calendar-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

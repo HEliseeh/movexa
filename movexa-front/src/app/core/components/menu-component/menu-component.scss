@@ -1,0 +1,107 @@
+// ================================================================
+// MENU-COMPONENT — styles des entrées de navigation
+// ================================================================
+
+:host {
+  display: block;
+}
+
+// ---- Entrée principale ----
+.nav-item {
+  // On surcharge le padding Material via [style.padding-left] dans le template
+  border-radius: var(--radius-md) !important;
+  margin: 2px var(--space-3) !important;
+  color: var(--color-text-muted) !important;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+
+  // Ligne active indicator à gauche
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 20%;
+    height: 60%;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    background: transparent;
+    transition: background var(--transition-fast);
+  }
+
+  &:hover:not(.nav-item--disabled) {
+    background: rgba(200, 164, 126, 0.08) !important;
+    color: var(--color-text) !important;
+  }
+
+  &.nav-item--active {
+    background: rgba(200, 164, 126, 0.14) !important;
+    color: var(--color-primary) !important;
+
+    &::before {
+      background: var(--color-primary);
+    }
+
+    .nav-icon {
+      color: var(--color-primary);
+    }
+  }
+
+  &.nav-item--disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  // Sous-entrées : légèrement plus petites
+  &.nav-item--deep {
+    font-size: var(--font-size-sm);
+    min-height: 40px !important;
+  }
+}
+
+// ---- Icône ----
+.nav-icon {
+  color: var(--color-text-muted);
+  font-size: 20px !important;
+  width: 20px !important;
+  height: 20px !important;
+  margin-right: var(--space-3);
+  transition: color var(--transition-fast);
+  flex-shrink: 0;
+}
+
+// ---- Libellé ----
+.nav-label {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ---- Chevron sous-menu ----
+.nav-chevron {
+  font-size: 18px !important;
+  width: 18px !important;
+  height: 18px !important;
+  color: var(--color-text-muted);
+  transition: transform var(--transition-base);
+  transform: rotate(0deg);
+
+  &.nav-chevron--open {
+    transform: rotate(180deg);
+  }
+}
+
+// ---- Conteneur enfants ----
+.nav-children {
+  overflow: hidden;
+  animation: slide-down 180ms ease forwards;
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

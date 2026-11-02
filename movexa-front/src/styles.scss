@@ -1,0 +1,52 @@
+/* You can add global styles to this file, and also import other style files */
+@import './styles/tokens.scss';
+@import './styles/base.scss';
+
+/* ============================================================
+   Classes de badges globales — utilisées via [ngClass] dans
+   le composant DataTable (ViewEncapsulation boundary bypass)
+   ============================================================ */
+
+/* Statut adhérent */
+.badge-actif {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border-color: var(--color-success) !important;
+}
+
+.badge-a-renouveler {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border-color: var(--color-warning) !important;
+  border-style: dashed !important;
+}
+
+.badge-expire {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border-color: var(--color-danger) !important;
+  border-style: dashed !important;
+}
+
+/* Statut paiement */
+.badge-paid {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border-color: var(--color-success) !important;
+}
+
+.badge-pending {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border-color: var(--color-warning) !important;
+  border-style: dashed !important;
+}
+
+.badge-failed {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border-color: var(--color-danger) !important;
+}
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }

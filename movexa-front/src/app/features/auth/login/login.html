@@ -1,0 +1,56 @@
+<main class="login-page">
+    <section class="login-card">
+      <header class="login-header">
+        <h1>Movexa</h1>
+        <p>Connectez-vous à votre espace</p>
+      </header>
+  
+      @if (errorMessage()) {
+        <div class="alert" role="alert">{{ errorMessage() }}</div>
+      }
+  
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="field">
+          <label for="username">Identifiant</label>
+          <input
+            id="username"
+            type="text"
+            formControlName="username"
+            autocomplete="username"
+            [class.invalid]="form.controls.username.touched && form.controls.username.invalid"
+          />
+          @if (form.controls.username.touched && form.controls.username.hasError('required')) {
+            <small class="error">L'identifiant est obligatoire.</small>
+          }
+        </div>
+  
+        <div class="field">
+          <label for="password">Mot de passe</label>
+          <div class="password-wrapper">
+            <input
+              id="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="current-password"
+              [class.invalid]="form.controls.password.touched && form.controls.password.invalid"
+            />
+            <button type="button" class="toggle" (click)="togglePassword()">
+              {{ showPassword() ? 'Masquer' : 'Afficher' }}
+            </button>
+          </div>
+          @if (form.controls.password.touched && form.controls.password.hasError('required')) {
+            <small class="error">Le mot de passe est obligatoire.</small>
+          }
+        </div>
+  
+        <label class="remember">
+          <input type="checkbox" formControlName="rememberMe" />
+          Se souvenir de moi
+        </label>
+  
+        <button type="submit" class="submit" [disabled]="loading()">
+          {{ loading() ? 'Connexion...' : 'Se connecter' }}
+        </button>
+      </form>
+    </section>
+  </main>

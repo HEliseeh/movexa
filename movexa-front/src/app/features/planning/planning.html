@@ -1,0 +1,98 @@
+<div class="page">
+
+  <!-- ===== EN-TÊTE ===== -->
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Cours &amp; planning</h1>
+      <p class="page-subtitle">{{ weekLabel }}</p>
+    </div>
+    <div class="header-actions">
+      <div class="week-nav">
+        <button class="btn-nav" type="button" aria-label="Semaine précédente">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button class="btn-nav" type="button" aria-label="Semaine suivante">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <button class="btn-primary" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Ajouter un cours
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== CALENDRIER SEMAINE ===== -->
+  <section class="card calendar-card" aria-label="Planning de la semaine">
+
+    <!-- En-têtes jours -->
+    <div class="calendar-grid">
+      @for (day of week; track day.iso) {
+        <button
+          class="day-header"
+          [class.day-today]="day.iso === todayIso"
+          [class.day-selected]="selectedDay() === day.iso"
+          type="button"
+          (click)="selectDay(day.iso)"
+          [attr.aria-pressed]="selectedDay() === day.iso"
+          [attr.aria-label]="day.label + ' ' + day.date"
+        >
+          <span class="day-label">{{ day.label }}</span>
+          <span class="day-number">{{ day.date }}</span>
+        </button>
+      }
+    </div>
+
+    <!-- Corps : cours par colonne -->
+    <div class="calendar-body" role="region" aria-label="Cours par jour">
+      <div class="calendar-grid calendar-courses">
+        @for (day of week; track day.iso) {
+          <div class="day-col" [class.col-selected]="selectedDay() === day.iso">
+            @if (day.courses.length === 0) {
+              <div class="no-course">—</div>
+            }
+            @for (course of day.courses; track course.id) {
+              <article
+                class="course-card"
+                [ngClass]="statusClass(course.status)"
+                tabindex="0"
+              >
+                <span class="course-time">{{ course.time }}</span>
+                <span class="course-name">{{ course.name }}</span>
+                <span class="course-coach">Coach {{ course.coach }}</span>
+                <span class="course-enrolled">{{ enrollLabel(course) }}</span>
+                @if (course.status === 'complet') {
+                  <span class="course-badge-complet">Complet</span>
+                }
+              </article>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SECTION COACHS ===== -->
+  <section class="card coachs-card" aria-label="Équipe de coachs">
+    <div class="card-header">
+      <h2 class="card-title">Coachs</h2>
+      <a href="#" class="link-action">Gérer l'équipe</a>
+    </div>
+    <ul class="coachs-list" role="list">
+      @for (coach of coaches; track coach.name) {
+        <li class="coach-item">
+          <div class="member-cell">
+            <span class="avatar" aria-hidden="true">{{ coach.initials }}</span>
+            <span class="coach-name">{{ coach.name }}</span>
+          </div>
+          <span class="coach-courses">
+            <a href="#" class="link-courses">{{ coach.coursesThisWeek }} cours cette semaine</a>
+          </span>
+        </li>
+      }
+    </ul>
+  </section>
+
+</div>

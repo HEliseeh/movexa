@@ -1,0 +1,93 @@
+:root {
+    color-scheme: dark;
+  
+    /* ---------- Palette brute (seul endroit où figurent les hex) ---------- */
+    --palette-navy-900: #151927;
+    --palette-navy-800: #1e2336;
+    --palette-slate-700: #2c3449;
+    --palette-slate-600: #3f4a63;
+    --palette-slate-500: #55617d;
+    --palette-sand-400: #d6b794;
+    --palette-sand-500: #c8a47e;
+    --palette-sand-600: #b08c66;
+    --palette-mist-300: #b9c6cb;
+    --palette-mist-400: #94a7ae;
+    --palette-mist-100: #e8edef;
+  
+    /* ---------- Rôles d'usage (à utiliser dans les composants) ---------- */
+    --color-bg: var(--palette-navy-800);
+    --color-bg-deep: var(--palette-navy-900);
+    --color-surface: var(--palette-slate-700);
+    --color-surface-raised: var(--palette-slate-600);
+    --color-border: var(--palette-slate-500);
+  
+    --color-text: var(--palette-mist-100);
+    --color-text-muted: var(--palette-mist-400);
+  
+    --color-primary: var(--palette-sand-500);
+    --color-primary-hover: var(--palette-sand-400);
+    --color-primary-active: var(--palette-sand-600);
+    --color-on-primary: var(--palette-navy-800); /* texte sur un bouton sable */
+    --color-focus-ring: rgb(200 164 126 / 0.35);
+  
+    /* ---------- Couleurs sémantiques (éclaircies pour fond sombre) ---------- */
+    --color-success: #4ade80;
+    --color-success-bg: rgb(74 222 128 / 0.12);
+    --color-warning: #fbbf24;
+    --color-warning-bg: rgb(251 191 36 / 0.12);
+    --color-danger: #f87171;
+    --color-danger-bg: rgb(248 113 113 / 0.12);
+    --color-info: #7dd3fc;
+    --color-info-bg: rgb(125 211 252 / 0.12);
+  
+    /* ---------- Typographie ---------- */
+    --font-family-base: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-family-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-md: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.5rem;
+    --font-size-2xl: 2rem;
+  
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+  
+    --line-height-tight: 1.25;
+    --line-height-base: 1.5;
+  
+    /* ---------- Espacements ---------- */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.5rem;
+    --space-6: 2rem;
+    --space-8: 3rem;
+  
+    /* ---------- Formes ---------- */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-full: 9999px;
+  
+    /* ---------- Ombres (plus marquées sur fond sombre) ---------- */
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 12px rgb(0 0 0 / 0.35);
+    --shadow-lg: 0 10px 30px rgb(0 0 0 / 0.5);
+  
+    /* ---------- Transitions et couches ---------- */
+    --transition-fast: 150ms ease;
+    --transition-base: 250ms ease;
+    --z-dropdown: 100;
+    --z-modal: 1000;
+    --z-toast: 1100;
+  
+    /* ---------- Layout ---------- */
+    --container-max-width: 1200px;
+    --sidebar-width: 260px;
+    --header-height: 64px;
+  }
