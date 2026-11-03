@@ -2,10 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1dafbd96-bccf-4a9c-a85f-2ff59c2a2a35" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/deploy/.idea/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/deploy/deploy.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/deploy/.env" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/movexa-front/Dockerfile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/movexa-front/nginx.conf" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deploy/deploy.sh" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/deploy.sh" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -51,7 +52,7 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="aspect.path.notification.shown" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/deploy" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/movexa-back1" />
     <property name="nodejs_package_manager_path" value="npm" />
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
@@ -65,7 +66,9 @@
       <workItem from="1793632336467" duration="1416000" />
       <workItem from="1793634840442" duration="30000" />
       <workItem from="1793634883981" duration="47000" />
-      <workItem from="1793634952536" duration="1434000" />
+      <workItem from="1793634952536" duration="2064000" />
+      <workItem from="1793694420569" duration="2004000" />
+      <workItem from="1793713272294" duration="3819000" />
     </task>
     <servers />
   </component>
