@@ -1,0 +1,74 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: movexa
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U movexa"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+
+  jhipster-registry:
+    image: jhipster/jhipster-registry:v7.4.0   # reprenez la version de votre jhipster-registry.yml
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_SECURITY_USER_PASSWORD=${REGISTRY_PASSWORD}
+      - JHIPSTER_REGISTRY_PASSWORD=${REGISTRY_PASSWORD}
+      - SPRING_CLOUD_CONFIG_SERVER_COMPOSITE_0_TYPE=native
+      - SPRING_CLOUD_CONFIG_SERVER_COMPOSITE_0_SEARCH_LOCATIONS=file:./central-config
+    volumes:
+      - ../registry/central-server-config:/central-config
+    ports:
+      - "8761:8761"
+
+  backend:
+    image: movexa-back1:latest
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_started }
+      jhipster-registry: { condition: service_started }
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://admin:${REGISTRY_PASSWORD}@jhipster-registry:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://admin:${REGISTRY_PASSWORD}@jhipster-registry:8761/config
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/movexaback1
+      - SPRING_DATASOURCE_USERNAME=movexa
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_LIQUIBASE_URL=jdbc:postgresql://postgres:5432/movexaback1
+      - JHIPSTER_CACHE_REDIS_SERVER=redis://redis:6379
+
+  gateway:
+    image: movexa-gateway:latest
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_started }
+      jhipster-registry: { condition: service_started }
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://admin:${REGISTRY_PASSWORD}@jhipster-registry:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://admin:${REGISTRY_PASSWORD}@jhipster-registry:8761/config
+      # Connexion réactive (utilisée par l'application)
+      - SPRING_R2DBC_URL=r2dbc:postgresql://postgres:5432/gateway
+      - SPRING_R2DBC_USERNAME=movexa
+      - SPRING_R2DBC_PASSWORD=${DB_PASSWORD}
+      # Connexion JDBC (utilisée uniquement par Liquibase pour les migrations)
+      - SPRING_LIQUIBASE_URL=jdbc:postgresql://postgres:5432/gateway
+      - SPRING_LIQUIBASE_USER=movexa
+      - SPRING_LIQUIBASE_PASSWORD=${DB_PASSWORD}
+      - JHIPSTER_CACHE_REDIS_SERVER=redis://redis:6379
+
+  frontend:
+    image: movexa-frontend:latest
+    depends_on: [gateway]
+    ports:
+      - "80:80"
+
+volumes:
+  pgdata:

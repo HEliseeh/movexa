@@ -1,0 +1,2 @@
+CREATE DATABASE gateway;
+CREATE DATABASE movexaback1;
