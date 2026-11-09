@@ -2,135 +2,59 @@
 // CONNECTED LAYOUT — shell principal de l'application
 // ================================================================
 
-// Largeurs de la sidebar
-$sidebar-expanded:  250px;
-$sidebar-collapsed: 64px;
-$topbar-height:     56px;
-
-// ---- Conteneur sidenav ----
-.layout-container {
-  // Prend toute la hauteur sous la topbar
-  height: calc(100vh - #{$topbar-height});
-  background: var(--color-bg) !important;
-
-  // Retire le fond par défaut de Material
-  --mat-sidenav-container-background-color: var(--color-bg-deep);
-  --mat-sidenav-content-background-color:   var(--color-bg);
-}
-
-// ---- Sidebar ----
-.layout-sidenav {
-  width: $sidebar-expanded;
-  border-right: 1px solid var(--color-border) !important;
-  background: var(--color-bg-deep) !important;
+.layout {
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  transition: width 280ms cubic-bezier(0.4, 0, 0.2, 1) !important;
-
-  // Désactive le shadow Material par défaut
-  box-shadow: none !important;
-
-  &.sidenav--collapsed {
-    width: $sidebar-collapsed;
-  }
+  background: var(--color-bg);
 }
 
-// ---- Brand (logo) ----
-.sidenav-brand {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  padding: var(--space-4) var(--space-4);
-  height: 56px;
-  border-bottom: 1px solid var(--color-border);
+.layout-topbar {
   flex-shrink: 0;
-  overflow: hidden;
-  transition: padding 280ms cubic-bezier(0.4, 0, 0.2, 1);
-
-  &.sidenav-brand--collapsed {
-    justify-content: center;
-    padding: var(--space-4) 0;
-  }
+  position: relative;
+  z-index: 200;
 }
 
-.sidenav-brand-text {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-primary);
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-  user-select: none;
+.layout-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
 }
 
-.sidenav-brand-icon {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-primary);
-  user-select: none;
-}
-
-// ---- Navigation ----
-.sidenav-nav {
-  flex: 1;
+// ---- Menu latéral ----
+.layout-sidenav {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
   overflow-y: auto;
-  overflow-x: hidden;
-  padding: var(--space-3) 0 !important;
-
-  // Scrollbar discrète
-  &::-webkit-scrollbar       { width: 3px; }
-  &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb {
-    background: var(--color-border);
-    border-radius: 99px;
-  }
-}
-
-// ---- Footer collapse ----
-.sidenav-footer {
-  flex-shrink: 0;
-  border-top: 1px solid var(--color-border);
-  padding: var(--space-2) var(--space-3);
-}
-
-.sidenav-collapse-btn {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-3);
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  background: none;
-  border: none;
-  border-radius: var(--radius-md);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  font-family: inherit;
-  transition:
-    background var(--transition-fast),
-    color var(--transition-fast);
-
-  &:hover {
-    background: rgba(200, 164, 126, 0.08);
-    color: var(--color-text);
-  }
-
-  svg {
-    flex-shrink: 0;
-  }
-}
-
-.sidenav--collapsed .sidenav-collapse-btn {
-  justify-content: center;
-}
-
-.collapse-label {
-  white-space: nowrap;
+  background: var(--color-nav-bg);
 }
 
 // ---- Contenu principal ----
+// position: relative → les overlays (FAB, panneaux) se placent dans cette zone
 .layout-content {
-  background: var(--color-bg) !important;
+  flex: 1 1 auto;
+  min-width: 0;
+  position: relative;
   overflow-y: auto;
+  background: var(--color-bg);
+}
+
+// ---- Petit écran : le menu se replie sous la barre du haut ----
+@media (max-width: 900px) {
+  .layout-body {
+    position: relative;
+  }
+
+  .layout-sidenav {
+    display: none;
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 150;
+    width: min(280px, 85vw);
+    box-shadow: var(--shadow-lg);
+
+    &.layout-sidenav--open {
+      display: block;
+    }
+  }
 }

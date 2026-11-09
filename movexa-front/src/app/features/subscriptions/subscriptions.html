@@ -1,101 +1,109 @@
-<div class="page">
+<div class="page-sheet">
 
-  <!-- ===== EN-TÊTE ===== -->
-  <header class="page-header">
-    <div>
-      <h1 class="page-title">Abonnements</h1>
-      <p class="page-subtitle">Forfaits proposés par {{ gymName }}</p>
-    </div>
-    <button class="btn-primary" type="button">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-      Nouveau forfait
-    </button>
-  </header>
-
-  <!-- ===== CARTES FORFAITS ===== -->
-  <section aria-label="Forfaits disponibles">
-    <div class="plans-grid">
-      @for (plan of plans; track plan.id) {
-        <article class="plan-card">
-          <div class="plan-top">
-            <span class="plan-name">{{ plan.name }}</span>
-            <span class="plan-subscribers">{{ plan.subscriberCount }} abonné{{ plan.subscriberCount > 1 ? 's' : '' }}</span>
-          </div>
-
-          <div class="plan-price">
-            <span class="price-amount">{{ plan.price }}</span>
-            <span class="price-currency">&nbsp;FCFA</span>
-            <span class="price-period">&nbsp;/ {{ plan.period }}</span>
-          </div>
-
-          <ul class="plan-features" role="list">
-            @for (feature of plan.features; track feature.label) {
-              <li class="plan-feature" [class.feature-excluded]="!feature.included">
-                @if (feature.included) {
-                  <svg class="feature-icon feature-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-                } @else {
-                  <svg class="feature-icon feature-cross" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                }
-                {{ feature.label }}
-              </li>
-            }
-          </ul>
-
-          <button class="btn-modify" type="button">Modifier</button>
-        </article>
+  <header class="sheet-header sheet-header--tabs">
+    <h1 class="page-title">Abonnements</h1>
+    <div class="tabs" role="tablist" aria-label="Sections des abonnements">
+      @for (t of tabs; track t.id) {
+        <button type="button" role="tab" class="tab" [attr.aria-selected]="tab() === t.id" (click)="tab.set(t.id)">{{ t.label }}</button>
       }
     </div>
-  </section>
+  </header>
 
-  <!-- ===== PAIEMENTS RÉCENTS ===== -->
-  <section class="card" aria-label="Paiements récents">
-    <div class="card-header">
-      <h2 class="card-title">Paiements récents</h2>
-      <a href="#" class="link-tout-voir">Tout voir</a>
-    </div>
+  @switch (tab()) {
 
-    <div class="table-wrapper" role="region" aria-label="Tableau des paiements récents" tabindex="0">
-      <table class="payments-table">
-        <thead>
-          <tr>
-            <th scope="col">ADHÉRENT</th>
-            <th scope="col">FORFAIT</th>
-            <th scope="col">MONTANT</th>
-            <th scope="col">MOYEN</th>
-            <th scope="col">STATUT</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (p of payments; track p.id) {
-            <tr>
-              <td>
-                <div class="member-cell">
-                  <span class="avatar" aria-hidden="true">{{ p.initials }}</span>
-                  <span class="member-name">{{ p.memberName }}</span>
-                </div>
-              </td>
-              <td class="td-muted">{{ p.plan }}</td>
-              <td class="td-amount">{{ p.amount }}</td>
-              <td class="td-muted">{{ p.method }}</td>
-              <td>
-                <span class="badge" [class.badge-paid]="p.status === 'Payé'" [class.badge-pending]="p.status === 'En attente'" [class.badge-failed]="p.status === 'Échoué'">
-                  @if (p.status === 'Payé') {
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-                  } @else if (p.status === 'En attente') {
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  } @else {
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  }
-                  {{ p.status }}
-                </span>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  </section>
+    <!-- ===== Abonnements en cours ===== -->
+    @case ('current') {
+      <div class="sheet-header">
+        <button type="button" class="btn btn-primary" (click)="resetFilters()">Réinitialiser tous les filtres</button>
+        <button type="button" class="btn btn-primary">Exporter les données</button>
+      </div>
+      <div class="grid-scroll">
+        <div class="subs-grid">
+          <div class="grid-row grid-row--head">
+            <input class="input-line input-line--filter" aria-label="Filtrer par adhérent" placeholder="Adhérent"
+                   [ngModel]="query()" (ngModelChange)="query.set($event)" />
+            <span>Formule</span><span>Début</span><span>Échéance</span><span>Reconduction</span>
+            <select class="input-line input-line--filter" aria-label="Filtrer par statut"
+                    [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+              <option value="">Statut</option>
+              @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+            </select>
+            <div class="text-right">
+              <div class="total-label">Total</div>
+              <div class="total-value">{{ fcfa(subscriptionsTotal()) }}</div>
+            </div>
+            <span></span>
+          </div>
+          <div>
+            @for (a of subscriptions(); track a.member) {
+              <div class="grid-row">
+                <span class="text-strong">{{ a.member }}</span>
+                <span>{{ a.plan }}</span>
+                <span>{{ a.start }}</span>
+                <span>{{ a.end }}</span>
+                <span>{{ a.renewal }}</span>
+                <span class="status"><span class="status-dot" [class]="'status-dot status-dot--' + tone(a.status)"></span>{{ a.status }}</span>
+                <span class="text-right nowrap">{{ fcfa(a.price) }}</span>
+                <button type="button" class="btn btn-outline btn-sm" [class.is-done]="sent().has(a.member)"
+                        [disabled]="sent().has(a.member)" (click)="remind(a.member)">
+                  {{ sent().has(a.member) ? 'Envoyée' : 'Relancer' }}
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="card-foot">{{ subscriptions().length }} lignes chargées sur 412</div>
+    }
 
+    <!-- ===== Formules ===== -->
+    @case ('plans') {
+      <div class="plans-grid">
+        @for (f of plans; track f.name) {
+          <article class="plan-card">
+            <h2 class="card-title">{{ f.name }}</h2>
+            <div><span class="plan-price">{{ f.price }}</span> <span class="plan-period">{{ f.period }}</span></div>
+            <p class="plan-detail">{{ f.detail }}</p>
+            <div class="plan-foot">
+              <span>{{ f.usage }}</span>
+              <button type="button" class="btn btn-outline btn-sm">Modifier</button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+
+    <!-- ===== Paiements et reçus ===== -->
+    @case ('payments') {
+      <div class="grid-scroll">
+        <div class="payments-grid">
+          <div class="grid-row grid-row--head">
+            <span>Reçu</span><span>Date</span><span>Adhérent</span><span>Objet</span><span>Moyen</span><span>Statut</span>
+            <div class="text-right">
+              <div class="total-label">Total</div>
+              <div class="total-value">{{ fcfa(paymentsTotal) }}</div>
+            </div>
+            <span></span>
+          </div>
+          <div>
+            @for (p of payments; track p.receipt) {
+              <div class="grid-row grid-row--roomy">
+                <span>{{ p.receipt }}</span>
+                <span>{{ p.date }}</span>
+                <span class="text-strong">{{ p.member }}</span>
+                <span>{{ p.item }}</span>
+                <span>{{ p.method }}</span>
+                <span class="status"><span class="status-dot" [class]="'status-dot status-dot--' + tone(p.status)"></span>{{ p.status }}</span>
+                <span class="text-right nowrap">{{ fcfa(p.price) }}</span>
+                <a href="#" class="text-right text-strong" (click)="$event.preventDefault()">PDF</a>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="card-foot">{{ payments.length }} lignes chargées</div>
+    }
+  }
 </div>
+
+<app-fab [actions]="fabActions" (actionTriggered)="onFabAction($event)" />

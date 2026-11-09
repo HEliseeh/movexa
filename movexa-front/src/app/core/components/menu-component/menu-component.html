@@ -1,49 +1,49 @@
 <!-- ================================================================
      ENTRÉE DE NAVIGATION — récursive
      ================================================================ -->
+@if (hasChildren) {
+  <button
+    type="button"
+    class="nav-item"
+    [style.padding-left.px]="20 + depth() * 16"
+    [attr.aria-expanded]="showChildren()"
+    [disabled]="item().disabled"
+    (click)="toggleChildren()"
+  >
+    <ng-container *ngTemplateOutlet="content" />
+    <svg class="nav-chevron" [class.nav-chevron--open]="showChildren()" width="16" height="16" viewBox="0 0 24 24"
+         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  </button>
 
-<!-- ---- Item principal ---- -->
-<a
-  mat-list-item
-  class="nav-item"
-  [class.nav-item--active]="isActive"
-  [class.nav-item--disabled]="item.disabled"
-  [class.nav-item--deep]="depth > 0"
-  [style.padding-left.px]="16 + depth * 16"
-  [matTooltip]="!expanded ? item.label : ''"
-  matTooltipPosition="right"
-  (click)="toggle($event)"
-  [attr.aria-current]="isActive ? 'page' : null"
-  [attr.aria-disabled]="item.disabled ?? false"
-  [attr.aria-expanded]="hasChildren ? showChildren() : null"
->
-  <!-- Icône -->
-  <mat-icon class="nav-icon" aria-hidden="true">{{ item.icon }}</mat-icon>
-
-  <!-- Libellé (masqué en mode réduit) -->
-  @if (expanded) {
-    <span class="nav-label">{{ item.label }}</span>
-
-    <!-- Indicateur sous-menu -->
-    @if (hasChildren) {
-      <mat-icon
-        class="nav-chevron"
-        [class.nav-chevron--open]="showChildren()"
-        aria-hidden="true"
-      >expand_more</mat-icon>
-    }
+  @if (showChildren()) {
+    <div class="nav-children" role="group" [attr.aria-label]="item().label">
+      @for (child of item().children; track child.id) {
+        <app-menu-component [item]="child" [depth]="depth() + 1" />
+      }
+    </div>
   }
-</a>
-
-<!-- ---- Sous-menus (récursion) ---- -->
-@if (hasChildren && showChildren() && expanded) {
-  <div class="nav-children" role="group" [attr.aria-label]="item.label">
-    @for (child of item.children; track child.id) {
-      <app-menu-component
-        [item]="child"
-        [depth]="depth + 1"
-        [expanded]="expanded"
-      />
-    }
-  </div>
+} @else if (item().disabled) {
+  <span class="nav-item nav-item--disabled" aria-disabled="true" [style.padding-left.px]="20 + depth() * 16">
+    <ng-container *ngTemplateOutlet="content" />
+  </span>
+} @else {
+  <a
+    class="nav-item"
+    [routerLink]="item().route"
+    routerLinkActive="nav-item--active"
+    ariaCurrentWhenActive="page"
+    [style.padding-left.px]="20 + depth() * 16"
+  >
+    <ng-container *ngTemplateOutlet="content" />
+  </a>
 }
+
+<ng-template #content>
+  <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path [attr.d]="item().iconPath" />
+  </svg>
+  <span class="nav-label">{{ item().label }}</span>
+</ng-template>

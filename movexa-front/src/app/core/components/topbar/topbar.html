@@ -1,42 +1,42 @@
-<mat-toolbar class="topbar">
+<header class="topbar">
 
-  <!-- Gauche : hamburger + logo -->
+  <!-- Gauche : bouton menu (mobile) + logo + version -->
   <div class="topbar-left">
     <button
-      mat-icon-button
-      class="topbar-menu-btn"
+      type="button"
+      class="topbar-icon-btn topbar-menu-btn"
       (click)="menuToggle.emit()"
-      aria-label="Ouvrir/fermer le menu"
-      matTooltip="Menu"
+      [attr.aria-expanded]="menuOpen()"
+      aria-controls="main-nav"
+      [attr.aria-label]="menuOpen() ? 'Fermer le menu' : 'Ouvrir le menu'"
     >
-      <mat-icon>menu</mat-icon>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" aria-hidden="true">
+        <path [attr.d]="menuOpen() ? 'M6 6l12 12M18 6L6 18' : 'M4 7h16M4 12h16M4 17h16'" />
+      </svg>
     </button>
 
-    <span class="topbar-logo" aria-label="Movexa">movexa</span>
+    <app-logo [width]="168" />
+    <span class="topbar-version">{{ version }}</span>
   </div>
-
-  <!-- Centre : nom de l'app (responsive, masqué sur mobile) -->
-  <span class="topbar-spacer"></span>
 
   <!-- Droite : utilisateur + déconnexion -->
   <div class="topbar-right">
     @if (user()) {
       <div class="topbar-user">
-        <span class="topbar-avatar" aria-hidden="true">{{ initials }}</span>
-        <span class="topbar-username">{{ displayName }}</span>
+        <div class="topbar-username">{{ displayName() }}</div>
+        @if (roleLabel()) {
+          <div class="topbar-role">{{ roleLabel() }}</div>
+        }
       </div>
     }
 
-    <button
-      mat-icon-button
-      class="topbar-logout-btn"
-      (click)="logout()"
-      aria-label="Se déconnecter"
-      matTooltip="Déconnexion"
-      matTooltipPosition="below"
-    >
-      <mat-icon>logout</mat-icon>
+    <button type="button" class="topbar-icon-btn" (click)="logout()" aria-label="Se déconnecter" title="Se déconnecter">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9M3 12h12M11 8l4 4-4 4" />
+      </svg>
     </button>
   </div>
 
-</mat-toolbar>
+</header>

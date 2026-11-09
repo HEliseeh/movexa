@@ -1,93 +1,133 @@
 :root {
-    color-scheme: dark;
-  
-    /* ---------- Palette brute (seul endroit où figurent les hex) ---------- */
-    --palette-navy-900: #151927;
-    --palette-navy-800: #1e2336;
-    --palette-slate-700: #2c3449;
-    --palette-slate-600: #3f4a63;
-    --palette-slate-500: #55617d;
-    --palette-sand-400: #d6b794;
-    --palette-sand-500: #c8a47e;
-    --palette-sand-600: #b08c66;
-    --palette-mist-300: #b9c6cb;
-    --palette-mist-400: #94a7ae;
-    --palette-mist-100: #e8edef;
-  
-    /* ---------- Rôles d'usage (à utiliser dans les composants) ---------- */
-    --color-bg: var(--palette-navy-800);
-    --color-bg-deep: var(--palette-navy-900);
-    --color-surface: var(--palette-slate-700);
-    --color-surface-raised: var(--palette-slate-600);
-    --color-border: var(--palette-slate-500);
-  
-    --color-text: var(--palette-mist-100);
-    --color-text-muted: var(--palette-mist-400);
-  
-    --color-primary: var(--palette-sand-500);
-    --color-primary-hover: var(--palette-sand-400);
-    --color-primary-active: var(--palette-sand-600);
-    --color-on-primary: var(--palette-navy-800); /* texte sur un bouton sable */
-    --color-focus-ring: rgb(200 164 126 / 0.35);
-  
-    /* ---------- Couleurs sémantiques (éclaircies pour fond sombre) ---------- */
-    --color-success: #4ade80;
-    --color-success-bg: rgb(74 222 128 / 0.12);
-    --color-warning: #fbbf24;
-    --color-warning-bg: rgb(251 191 36 / 0.12);
-    --color-danger: #f87171;
-    --color-danger-bg: rgb(248 113 113 / 0.12);
-    --color-info: #7dd3fc;
-    --color-info-bg: rgb(125 211 252 / 0.12);
-  
-    /* ---------- Typographie ---------- */
-    --font-family-base: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    --font-family-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
-  
-    --font-size-xs: 0.75rem;
-    --font-size-sm: 0.875rem;
-    --font-size-md: 1rem;
-    --font-size-lg: 1.125rem;
-    --font-size-xl: 1.5rem;
-    --font-size-2xl: 2rem;
-  
-    --font-weight-regular: 400;
-    --font-weight-medium: 500;
-    --font-weight-semibold: 600;
-    --font-weight-bold: 700;
-  
-    --line-height-tight: 1.25;
-    --line-height-base: 1.5;
-  
-    /* ---------- Espacements ---------- */
-    --space-1: 0.25rem;
-    --space-2: 0.5rem;
-    --space-3: 0.75rem;
-    --space-4: 1rem;
-    --space-5: 1.5rem;
-    --space-6: 2rem;
-    --space-8: 3rem;
-  
-    /* ---------- Formes ---------- */
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-full: 9999px;
-  
-    /* ---------- Ombres (plus marquées sur fond sombre) ---------- */
-    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
-    --shadow-md: 0 4px 12px rgb(0 0 0 / 0.35);
-    --shadow-lg: 0 10px 30px rgb(0 0 0 / 0.5);
-  
-    /* ---------- Transitions et couches ---------- */
-    --transition-fast: 150ms ease;
-    --transition-base: 250ms ease;
-    --z-dropdown: 100;
-    --z-modal: 1000;
-    --z-toast: 1100;
-  
-    /* ---------- Layout ---------- */
-    --container-max-width: 1200px;
-    --sidebar-width: 260px;
-    --header-height: 64px;
-  }
+  color-scheme: light;
+
+  /* ---------- Palette brute (seul endroit où figurent les hex) ---------- */
+  --palette-navy-950: #161a29;
+  --palette-navy-900: #1e2336;
+  --palette-navy-700: #30374e;
+  --palette-navy-600: #3a4158;
+  --palette-slate-500: #5c6275;
+  --palette-slate-450: #4f5568;
+  --palette-slate-400: #6b728a;
+  --palette-slate-300: #8a8f9c;
+  --palette-slate-200: #c9ccd6;
+  --palette-slate-100: #d5d8e2;
+  --palette-sand-300: #e6cfb5;
+  --palette-sand-100: #f1e7da;
+  --palette-sand-500: #c8a47e;
+  --palette-sand-600: #a8835a;
+  --palette-sand-800: #7f6040;
+  --palette-paper-200: #efede8;
+  --palette-paper-100: #f6f3ee;
+  --palette-line-300: #ddd9d1;
+  --palette-line-200: #e8e5df;
+  --palette-white: #ffffff;
+
+  /* ---------- Rôles d'usage (à utiliser dans les composants) ---------- */
+  --color-bg: var(--palette-paper-200);          /* fond des pages */
+  --color-bg-deep: var(--palette-navy-950);      /* barre du haut */
+  --color-surface: var(--palette-white);         /* cartes, tableaux */
+  --color-surface-raised: var(--palette-paper-100);
+  --color-surface-stripe: var(--palette-paper-100); /* lignes paires */
+  --color-surface-selected: var(--palette-sand-100);
+  --color-border: var(--palette-line-300);
+  --color-border-soft: var(--palette-line-200);
+  --color-input-line: var(--palette-slate-300);
+
+  --color-text: var(--palette-navy-900);
+  --color-text-muted: var(--palette-slate-500);
+  --color-text-soft: var(--palette-slate-450);
+
+  --color-link: var(--palette-sand-800);
+  --color-link-hover: var(--palette-navy-900);
+
+  --color-primary: var(--palette-sand-500);
+  --color-primary-hover: #d3b28f;
+  --color-primary-active: var(--palette-sand-600);
+  --color-on-primary: var(--palette-navy-900);   /* texte sur un bouton sable */
+  --color-focus-ring: rgb(200 164 126 / 0.45);
+
+  /* Zones sombres : menu latéral, panneau de connexion, scanner */
+  --color-nav-bg: var(--palette-navy-900);
+  --color-nav-text: var(--palette-white);
+  --color-nav-divider: var(--palette-navy-600);
+  --color-nav-active-bg: var(--palette-sand-500);
+  --color-nav-active-text: var(--palette-navy-900);
+  --color-dark-panel: var(--palette-navy-900);
+  --color-dark-panel-raised: var(--palette-navy-700);
+  --color-on-dark: var(--palette-white);
+  --color-on-dark-muted: var(--palette-slate-100);
+
+  /* ---------- Couleurs sémantiques (pastilles de statut) ---------- */
+  --color-success: #2f8f5b;
+  --color-success-strong: #1f7a4a;
+  --color-success-bg: rgb(47 143 91 / 0.12);
+  --color-warning: #d9822b;
+  --color-warning-bg: rgb(217 130 43 / 0.12);
+  --color-danger: #c8443a;
+  --color-danger-strong: #b3352c;
+  --color-danger-bg: rgb(200 68 58 / 0.12);
+  --color-neutral: var(--palette-slate-300);
+  --color-info: #3a6ea5;
+  --color-info-bg: rgb(58 110 165 / 0.12);
+
+  /* Graphiques */
+  --color-chart-main: var(--palette-navy-900);
+  --color-chart-current: var(--palette-sand-600);
+  --color-chart-muted: var(--palette-slate-200);
+  --color-chart-grid: var(--palette-line-200);
+
+  /* ---------- Typographie ---------- */
+  --font-family-base: 'Lato', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-family-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  --font-size-xs: 0.75rem;   /* 12px */
+  --font-size-sm: 0.875rem;  /* 14px */
+  --font-size-base: 0.9375rem; /* 15px : texte des tableaux */
+  --font-size-md: 1rem;      /* 16px */
+  --font-size-lg: 1.125rem;  /* 18px : titres de carte */
+  --font-size-xl: 1.5rem;    /* 24px : titres de page */
+  --font-size-2xl: 1.875rem; /* 30px : KPI */
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 700;
+  --font-weight-semibold: 700;
+  --font-weight-bold: 700;
+  --font-weight-black: 900;
+
+  --line-height-tight: 1.25;
+  --line-height-base: 1.5;
+
+  /* ---------- Espacements ---------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 3rem;
+
+  /* ---------- Formes ---------- */
+  --radius-sm: 4px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-full: 9999px;
+
+  /* ---------- Ombres ---------- */
+  --shadow-sm: 0 1px 4px rgb(30 35 54 / 0.35);
+  --shadow-md: 0 2px 5px rgb(30 35 54 / 0.35);
+  --shadow-lg: 0 3px 8px rgb(30 35 54 / 0.5);
+
+  /* ---------- Transitions et couches ---------- */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --z-dropdown: 100;
+  --z-modal: 1000;
+  --z-toast: 1100;
+
+  /* ---------- Layout ---------- */
+  --container-max-width: 1200px;
+  --sidebar-width: 240px;
+  --header-height: 64px;
+  --touch-target: 44px;
+}

@@ -1,12 +1,13 @@
+<!-- Voile blanc derrière le menu ouvert : clic = fermeture -->
+@if (isOpen()) {
+  <div class="fab-backdrop" (click)="close()" aria-hidden="true"></div>
+}
+
 <div class="fab-container">
 
   <!-- ===== LISTE D'ACTIONS (s'affiche au-dessus du bouton) ===== -->
   @if (isOpen()) {
-    <ul
-      class="fab-menu"
-      role="menu"
-      aria-label="Actions disponibles"
-    >
+    <ul class="fab-menu" role="menu" aria-label="Actions disponibles">
       @for (action of actions(); track action.id) {
         <li role="none">
           <button
@@ -19,15 +20,13 @@
           >
             <span class="fab-action-label">{{ action.label }}</span>
             <span class="fab-action-icon" aria-hidden="true">
-              @if (action.iconPath) {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                @if (action.iconPath) {
                   <path [attr.d]="action.iconPath" />
-                </svg>
-              } @else {
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>
-                </svg>
-              }
+                } @else {
+                  <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+                }
+              </svg>
             </span>
           </button>
         </li>
@@ -38,25 +37,15 @@
   <!-- ===== BOUTON FAB PRINCIPAL ===== -->
   <button
     class="fab-trigger"
-    [class.fab-trigger-open]="isOpen()"
     type="button"
     [attr.aria-expanded]="isOpen()"
     aria-haspopup="menu"
-    aria-label="Actions rapides"
+    [attr.aria-label]="isOpen() ? 'Fermer les actions' : 'Ouvrir les actions'"
     (click)="toggle()"
   >
-    <!-- Icône hamburger → croix (animée via CSS) -->
-    <span class="fab-icon-wrap" aria-hidden="true">
-      <svg class="icon-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="4" y1="7"  x2="20" y2="7"/>
-        <line x1="4" y1="12" x2="20" y2="12"/>
-        <line x1="4" y1="17" x2="20" y2="17"/>
-      </svg>
-      <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18"/>
-        <line x1="6"  y1="6" x2="18" y2="18"/>
-      </svg>
-    </span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+      <path [attr.d]="isOpen() ? 'M6 6l12 12M18 6L6 18' : 'M4 7h16M4 12h16M4 17h16'" />
+    </svg>
   </button>
 
 </div>

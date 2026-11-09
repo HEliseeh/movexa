@@ -1,56 +1,75 @@
-<main class="login-page">
-    <section class="login-card">
-      <header class="login-header">
-        <h1>Movexa</h1>
-        <p>Connectez-vous à votre espace</p>
-      </header>
-  
+<div class="login-page">
+
+  <!-- ===== Panneau de marque (navy) ===== -->
+  <section class="login-brand">
+    <app-logo [width]="280" />
+
+    <svg class="login-brand-mark" viewBox="96 118 320 278" aria-hidden="true">
+      <polygon class="mark-light" points="96,396 156,396 156,263 203.5,310.5 246,268 96,118" />
+      <polygon class="mark-accent" points="288,118 416,118 416,396 356,396 356,263 258.5,360.5 216,318 356,178 288,178" />
+    </svg>
+
+    <div class="login-pitch">
+      <h1>Toute votre salle, au même endroit.</h1>
+      <p>Adhérents, abonnements, paiements et présences par QR code.</p>
+    </div>
+  </section>
+
+  <!-- ===== Formulaire ===== -->
+  <section class="login-form-side">
+    <form class="login-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div>
+        <h2 class="login-title">Connexion</h2>
+        <p class="login-subtitle">Accédez à l'espace de gestion de votre salle.</p>
+      </div>
+
       @if (errorMessage()) {
         <div class="alert" role="alert">{{ errorMessage() }}</div>
       }
-  
-      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-        <div class="field">
-          <label for="username">Identifiant</label>
+
+      <div class="field">
+        <label for="username">Identifiant</label>
+        <input
+          id="username"
+          class="input-line"
+          type="text"
+          formControlName="username"
+          autocomplete="username"
+          [class.invalid]="form.controls.username.touched && form.controls.username.invalid"
+        />
+        @if (form.controls.username.touched && form.controls.username.hasError('required')) {
+          <small class="field-error">L'identifiant est obligatoire.</small>
+        }
+      </div>
+
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <div class="password-wrapper" [class.invalid]="form.controls.password.touched && form.controls.password.invalid">
           <input
-            id="username"
-            type="text"
-            formControlName="username"
-            autocomplete="username"
-            [class.invalid]="form.controls.username.touched && form.controls.username.invalid"
+            id="password"
+            class="input-line"
+            [type]="showPassword() ? 'text' : 'password'"
+            formControlName="password"
+            autocomplete="current-password"
           />
-          @if (form.controls.username.touched && form.controls.username.hasError('required')) {
-            <small class="error">L'identifiant est obligatoire.</small>
-          }
+          <button type="button" class="toggle" (click)="togglePassword()">
+            {{ showPassword() ? 'Masquer' : 'Afficher' }}
+          </button>
         </div>
-  
-        <div class="field">
-          <label for="password">Mot de passe</label>
-          <div class="password-wrapper">
-            <input
-              id="password"
-              [type]="showPassword() ? 'text' : 'password'"
-              formControlName="password"
-              autocomplete="current-password"
-              [class.invalid]="form.controls.password.touched && form.controls.password.invalid"
-            />
-            <button type="button" class="toggle" (click)="togglePassword()">
-              {{ showPassword() ? 'Masquer' : 'Afficher' }}
-            </button>
-          </div>
-          @if (form.controls.password.touched && form.controls.password.hasError('required')) {
-            <small class="error">Le mot de passe est obligatoire.</small>
-          }
-        </div>
-  
-        <label class="remember">
-          <input type="checkbox" formControlName="rememberMe" />
-          Se souvenir de moi
-        </label>
-  
-        <button type="submit" class="submit" [disabled]="loading()">
-          {{ loading() ? 'Connexion...' : 'Se connecter' }}
-        </button>
-      </form>
-    </section>
-  </main>
+        @if (form.controls.password.touched && form.controls.password.hasError('required')) {
+          <small class="field-error">Le mot de passe est obligatoire.</small>
+        }
+      </div>
+
+      <label class="checkbox-label">
+        <input type="checkbox" formControlName="rememberMe" />
+        Rester connecté
+      </label>
+
+      <button type="submit" class="btn btn-primary btn-lg btn-block" [disabled]="loading()">
+        {{ loading() ? 'Connexion…' : 'Se connecter' }}
+      </button>
+    </form>
+  </section>
+
+</div>

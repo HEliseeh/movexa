@@ -1,15 +1,21 @@
-import { Component, inject, output } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
-import { MatToolbar } from '@angular/material/toolbar';
-import { MatTooltip } from '@angular/material/tooltip';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 import { CurrentUserStore } from '@core/auth/current-user.store';
+import { Logo } from '@shared/logo/logo';
+
+/** Libellés affichés sous le nom de l'utilisateur, par ordre de priorité */
+const ROLE_LABELS: [string, string][] = [
+  ['ROLE_ADMIN', 'Administrateur'],
+  ['ROLE_MANAGER', 'Gérant'],
+  ['ROLE_COACH', 'Coach'],
+  ['ROLE_RECEPTION', 'Réception'],
+  ['ROLE_USER', 'Utilisateur'],
+];
 
 @Component({
   selector: 'app-topbar',
-  imports: [MatToolbar, MatIcon, MatButtonModule, MatTooltip],
+  imports: [Logo],
   templateUrl: './topbar.html',
   styleUrl: './topbar.css',
 })
@@ -18,24 +24,26 @@ export class Topbar {
   private store  = inject(CurrentUserStore);
   private router = inject(Router);
 
-  /** Émis quand l'utilisateur clique sur le bouton hamburger */
+  /** Menu latéral ouvert (affichage mobile uniquement) */
+  menuOpen = input(false);
+
+  /** Émis quand l'utilisateur clique sur le bouton menu (mobile) */
   menuToggle = output<void>();
+
+  readonly version = 'MVP 0.1';
 
   readonly user = this.store.user;
 
-  get initials(): string {
-    const u = this.user();
-    if (!u) return '?';
-    const first = u.firstName?.charAt(0) ?? '';
-    const last  = u.lastName?.charAt(0)  ?? '';
-    return (first + last).toUpperCase() || u.login.slice(0, 2).toUpperCase();
-  }
-
-  get displayName(): string {
+  readonly displayName = computed(() => {
     const u = this.user();
     if (!u) return '';
     return u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.login;
-  }
+  });
+
+  readonly roleLabel = computed(() => {
+    const roles = this.store.roles();
+    return ROLE_LABELS.find(([role]) => roles.includes(role))?.[1] ?? '';
+  });
 
   logout(): void {
     this.auth.logout();

@@ -1,96 +1,85 @@
 /* ================================================================
-   TOPBAR — barre de navigation supérieure fixe
+   TOPBAR — barre supérieure (navy profond, 64 px)
    ================================================================ */
 
+:host {
+  display: block;
+}
+
 .topbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 200;
-  height: 56px !important;
-  padding: 0 var(--space-3) !important;
-  background: var(--color-bg-deep) !important;
-  border-bottom: 1px solid var(--color-border);
+  min-height: var(--header-height);
+  padding: 10px var(--space-4) 10px var(--space-5);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  justify-content: space-between;
+  gap: var(--space-3);
+  background: var(--color-bg-deep);
+  color: var(--color-on-dark);
 }
 
-/* ---- Gauche ---- */
-.topbar-left {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-shrink: 0;
-}
-
-.topbar-menu-btn {
-  color: var(--color-text-muted) !important;
-}
-
-.topbar-menu-btn:hover {
-  color: var(--color-text) !important;
-}
-
-.topbar-logo {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-primary);
-  letter-spacing: 0.04em;
-  user-select: none;
-}
-
-/* ---- Spacer ---- */
-.topbar-spacer {
-  flex: 1;
-}
-
-/* ---- Droite ---- */
+.topbar-left,
 .topbar-right {
   display: flex;
   align-items: center;
+  gap: 14px;
+}
+
+.topbar-right {
   gap: var(--space-3);
-  flex-shrink: 0;
+}
+
+.topbar-version {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-on-dark-muted);
 }
 
 .topbar-user {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.topbar-avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  flex-shrink: 0;
+  text-align: right;
 }
 
 .topbar-username {
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
-  white-space: nowrap;
+  font-weight: var(--font-weight-bold);
+  line-height: 18px;
 }
 
-.topbar-logout-btn {
-  color: var(--color-text-muted) !important;
-  transition: color var(--transition-fast);
+.topbar-role {
+  font-size: var(--font-size-xs);
+  line-height: 16px;
+  color: #c9cdd9;
 }
 
-.topbar-logout-btn:hover {
-  color: var(--color-danger) !important;
+.topbar-icon-btn {
+  width: var(--touch-target);
+  height: var(--touch-target);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-on-dark);
+  cursor: pointer;
 }
 
-/* ---- Responsive ---- */
+.topbar-icon-btn:hover {
+  background: rgb(255 255 255 / 0.08);
+}
+
+/* Le bouton menu n'apparaît que quand le menu latéral est replié */
+.topbar-menu-btn {
+  display: none;
+  margin-left: calc(-1 * var(--space-2));
+}
+
+@media (max-width: 900px) {
+  .topbar-menu-btn { display: flex; }
+}
+
 @media (max-width: 600px) {
-  .topbar-username { display: none; }
+  .topbar-user,
+  .topbar-version { display: none; }
 }

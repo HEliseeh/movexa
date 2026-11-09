@@ -1,81 +1,98 @@
-import { Component, signal } from '@angular/core';
-import { NgClass } from '@angular/common';
+import { Component, computed, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
-export type AccessResult = 'Validé' | 'Refusé - expiré' | 'Refusé - déjà entré' | 'Refusé - invité';
-export type ReaderStatus = 'En ligne' | 'Hors ligne';
+export type ResultFilter = 'all' | 'ok' | 'ko';
 
 export interface AccessLog {
-  id: number;
   time: string;
   name: string;
-  reader: string;
-  result: AccessResult;
+  plan: string;
+  method: 'QR' | 'Manuel';
+  result: string;
+  allowed: boolean;
 }
 
-export interface AccessRule {
-  id: string;
-  label: string;
-  description: string;
-  enabled: boolean;
+/** Résultat d'un scan affiché dans le panneau de gauche */
+export interface ScanResult {
+  allowed: boolean;
+  title: string;
+  text: string;
 }
 
-export interface Reader {
-  id: number;
+interface DemoPerson extends ScanResult {
   name: string;
-  status: ReaderStatus;
+  plan: string;
+  result: string;
 }
+
+// ---- Données mockées (à remplacer par le flux du lecteur QR) ----
+const DEMO: DemoPerson[] = [
+  { name: 'Awa Diallo', plan: 'Trimestriel', allowed: true, result: 'Autorisé', title: 'Accès autorisé', text: 'Awa Diallo, abonnement valable jusqu’au 14/11/2026.' },
+  { name: 'Inès Benali', plan: 'Mensuel Illimité', allowed: true, result: 'Autorisé, expire bientôt', title: 'Accès autorisé', text: 'Inès Benali, son abonnement expire dans 2 jours.' },
+  { name: 'Camille Roux', plan: 'Mensuel Illimité', allowed: false, result: 'Refusé, impayé', title: 'Accès refusé', text: 'Camille Roux, 30 000 FCFA impayés depuis 6 jours.' },
+  { name: 'Yacine Haddad', plan: 'Mensuel Essentiel', allowed: false, result: 'Refusé, expiré', title: 'Accès refusé', text: 'Yacine Haddad, abonnement expiré le 07/11/2026.' },
+];
+
+const LOGS: AccessLog[] = [
+  { time: '18:09', name: 'Thomas Lefèvre', plan: 'Annuel', method: 'QR', result: 'Autorisé', allowed: true },
+  { time: '18:07', name: 'Sarah Nguyen', plan: 'Mensuel Illimité', method: 'QR', result: 'Autorisé', allowed: true },
+  { time: '18:04', name: 'Yacine Haddad', plan: 'Mensuel Essentiel', method: 'QR', result: 'Refusé, expiré', allowed: false },
+  { time: '18:01', name: 'Léa Moreau', plan: 'Séance à la carte', method: 'Manuel', result: 'Autorisé', allowed: true },
+  { time: '17:56', name: 'Julien Petit', plan: 'Mensuel Essentiel', method: 'QR', result: 'Autorisé, expire bientôt', allowed: true },
+  { time: '17:53', name: 'Mamadou Sow', plan: 'Mensuel Illimité', method: 'QR', result: 'Autorisé', allowed: true },
+  { time: '17:49', name: 'Koffi Mensah', plan: 'Mensuel Illimité', method: 'QR', result: 'Autorisé, expire bientôt', allowed: true },
+];
+
+/** Compteurs du jour avant les passages simulés */
+const BASE_PRESENT = 47;
+const BASE_ENTRIES = 186;
+const BASE_REFUSED = 3;
 
 @Component({
   selector: 'app-access',
-  imports: [NgClass],
+  imports: [FormsModule, RouterLink],
   templateUrl: './access.html',
   styleUrl: './access.css',
 })
 export class Access {
-  readonly gymName = 'NOM DE LA SALLE';
+  readonly demo = DEMO;
 
-  // ---- KPIs ----
-  readonly validatedToday = 37;
-  readonly refusedToday   = 4;
-  readonly readersOnline  = 2;
-  readonly readersTotal   = 3;
+  readonly query = signal('');
+  readonly filter = signal<ResultFilter>('all');
+  readonly lastScan = signal<ScanResult | null>(null);
+  private readonly added = signal<AccessLog[]>([]);
 
-  // ---- Journal ----
-  readonly logs: AccessLog[] = [
-    { id: 1, time: '09:14', name: 'Thomas Martin',    reader: 'Entrée principale', result: 'Validé' },
-    { id: 2, time: '09:11', name: 'Camille Aubert',   reader: 'Entrée principale', result: 'Validé' },
-    { id: 3, time: '09:08', name: 'Kevin Renaud',     reader: 'Entrée principale', result: 'Refusé - expiré' },
-    { id: 4, time: '09:02', name: 'Aïssatou Diallo',  reader: 'Entrée parking',    result: 'Validé' },
-    { id: 5, time: '08:55', name: 'Moussa Touré',     reader: 'Entrée principale', result: 'Refusé - déjà entré' },
-  ];
+  private readonly allLogs = computed(() => [...this.added(), ...LOGS]);
 
-  // ---- Règles ----
-  rules = signal<AccessRule[]>([
-    { id: 'antipassback',       label: 'Anti-passback',                 description: 'Bloque deux entrées sans sortie.',             enabled: true  },
-    { id: 'block-expired',      label: 'Refuser les abonnements expirés', description: 'Le lecteur affiche le motif du refus.',       enabled: true  },
-    { id: 'guest-access',       label: 'Accès invités',                 description: 'Autorise les codes à usage unique.',            enabled: false },
-    { id: 'qr-validity',        label: 'Validité du QR code',           description: 'Renouvelle toutes les 5 minutes.',              enabled: true  },
-  ]);
-
-  // ---- Lecteurs ----
-  readonly readers: Reader[] = [
-    { id: 1, name: 'Entrée principale', status: 'En ligne'   },
-    { id: 2, name: 'Entrée parking',    status: 'En ligne'   },
-    { id: 3, name: 'Salle annexe',      status: 'Hors ligne' },
-  ];
-
-  toggleRule(id: string): void {
-    this.rules.update(list =>
-      list.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r)
+  readonly rows = computed(() => {
+    const q = this.query().trim().toLowerCase();
+    const f = this.filter();
+    return this.allLogs().filter(
+      r => (!q || r.name.toLowerCase().includes(q)) && (f === 'all' || (f === 'ok') === r.allowed),
     );
+  });
+
+  private readonly addedAllowed = computed(() => this.added().filter(r => r.allowed).length);
+  readonly present = computed(() => BASE_PRESENT + this.addedAllowed());
+  readonly entries = computed(() => BASE_ENTRIES + this.addedAllowed());
+  readonly refused = computed(() => BASE_REFUSED + this.added().length - this.addedAllowed());
+  readonly totalPassages = computed(() => LOGS.length + 182 + this.added().length);
+
+  /** Simule la lecture d'un QR code (en attendant le vrai lecteur) */
+  simulate(p: DemoPerson): void {
+    const time = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date());
+    this.lastScan.set(p);
+    this.added.update(list => [{ time, name: p.name, plan: p.plan, method: 'QR', result: p.result, allowed: p.allowed }, ...list]);
   }
 
-  resultClass(result: AccessResult): string {
-    if (result === 'Validé') return 'result-valid';
-    return 'result-refused';
+  resetFilters(): void {
+    this.query.set('');
+    this.filter.set('all');
   }
 
-  readerClass(status: ReaderStatus): string {
-    return status === 'En ligne' ? 'reader-online' : 'reader-offline';
+  tone(r: AccessLog): string {
+    if (!r.allowed) return 'danger';
+    return r.result === 'Autorisé' ? 'success' : 'warning';
   }
 }

@@ -1,126 +1,117 @@
-<div class="page">
+<div class="page-sheet">
 
-  <!-- ===== EN-TÊTE ===== -->
-  <header class="page-header">
-    <div>
-      <h1 class="page-title">Paramètres</h1>
-      <p class="page-subtitle">Configuration de {{ gymName() }}</p>
+  <header class="sheet-header sheet-header--tabs">
+    <h1 class="page-title">Paramètres</h1>
+    <div class="tabs" role="tablist" aria-label="Sections des paramètres">
+      @for (t of tabs; track t.id) {
+        <button type="button" role="tab" class="tab" [attr.aria-selected]="tab() === t.id" (click)="selectTab(t.id)">{{ t.label }}</button>
+      }
     </div>
   </header>
 
-  <!-- ===== GRILLE PRINCIPALE ===== -->
-  <div class="settings-grid">
+  @switch (tab()) {
 
-    <!-- ---- Colonne gauche ---- -->
-    <div class="left-col">
+    <!-- ===== Ma salle ===== -->
+    @case ('gym') {
+      <form class="gym-form" (ngSubmit)="save()">
+        @for (f of gymFields; track f.id) {
+          <div class="field">
+            <label [for]="f.id">{{ f.label }}</label>
+            <input class="input-line" [id]="f.id" [name]="f.id" [type]="f.type" [placeholder]="f.placeholder" [(ngModel)]="gym[f.id]" />
+          </div>
+        }
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-lg">Enregistrer</button>
+          <span role="status" class="saved">{{ savedMessage() }}</span>
+        </div>
+      </form>
+    }
 
-      <!-- Profil de la salle -->
-      <section class="card" aria-label="Profil de la salle">
-        <h2 class="card-title">Profil de la salle</h2>
-        <div class="form-grid">
-          <div class="field">
-            <label class="field-label" for="gymName">NOM DE LA SALLE</label>
-            <input id="gymName" type="text" class="field-input" [ngModel]="gymName()" (ngModelChange)="gymName.set($event)" />
+    <!-- ===== Personnel et coachs ===== -->
+    @case ('team') {
+      <div class="sheet-header team-toolbar">
+        <button type="button" class="btn btn-primary">Ajouter un membre de l'équipe</button>
+      </div>
+      <div class="grid-scroll">
+        <div class="team-grid">
+          <div class="grid-row grid-row--head">
+            <span>Nom</span><span>Rôle</span><span>Spécialité</span><span>Adhérents suivis</span><span>Statut</span><span></span>
           </div>
-          <div class="field">
-            <label class="field-label" for="subdomain">SOUS-DOMAINE</label>
-            <div class="input-suffix-wrapper">
-              <input id="subdomain" type="text" class="field-input" [ngModel]="subdomain()" (ngModelChange)="subdomain.set($event)" />
-              <span class="input-suffix">.movexa.com</span>
-            </div>
-          </div>
-          <div class="field">
-            <label class="field-label" for="address">ADRESSE</label>
-            <input id="address" type="text" class="field-input" [ngModel]="address()" (ngModelChange)="address.set($event)" />
-          </div>
-          <div class="field">
-            <label class="field-label" for="phone">TÉLÉPHONE</label>
-            <input id="phone" type="tel" class="field-input" [ngModel]="phone()" (ngModelChange)="phone.set($event)" />
+          <div>
+            @for (p of team; track p.name) {
+              <div class="grid-row">
+                <span class="text-strong">{{ p.name }}</span>
+                <span>{{ p.role }}</span>
+                <span>{{ p.specialty }}</span>
+                <span>{{ p.followed }}</span>
+                <span class="status">
+                  <span class="status-dot" [class.status-dot--success]="p.active" [class.status-dot--neutral]="!p.active"></span>
+                  {{ p.active ? 'Actif' : 'En congé' }}
+                </span>
+                <button type="button" class="btn btn-outline btn-sm">Modifier</button>
+              </div>
+            }
           </div>
         </div>
-      </section>
+      </div>
+    }
 
-      <!-- Notifications aux adhérents -->
-      <section class="card" aria-label="Notifications aux adhérents">
-        <h2 class="card-title">Notifications aux adhérents</h2>
-        <ul class="toggle-list" role="list">
-          @for (notif of notifChannels(); track notif.id) {
-            <li class="toggle-item">
-              <div class="toggle-info">
-                <span class="toggle-label">{{ notif.label }}</span>
-                <span class="toggle-desc">{{ notif.description }}</span>
+    <!-- ===== Paiements et reçus ===== -->
+    @case ('payments') {
+      <div class="payments-settings">
+        <section>
+          <h2 class="card-title section-title">Moyens de paiement acceptés</h2>
+          @for (m of paymentMethods(); track m.id) {
+            <div class="method">
+              <div>
+                <div class="text-strong">{{ m.label }}</div>
+                <div class="method-detail">{{ m.detail }}</div>
               </div>
               <button
-                class="toggle"
                 type="button"
-                role="switch"
-                [attr.aria-checked]="notif.enabled"
-                [class.toggle-on]="notif.enabled"
-                (click)="toggleNotif(notif.id)"
-                [attr.aria-label]="notif.label"
-              ></button>
-            </li>
-          }
-          <li class="toggle-item">
-            <div class="toggle-info">
-              <span class="toggle-label">Rappel avant expiration</span>
-              <span class="toggle-desc">Envoyé {{ reminderDays() }} jours avant la fin de l'abonnement.</span>
+                class="switch"
+                [attr.aria-pressed]="m.enabled"
+                [attr.aria-label]="m.label + (m.enabled ? ', activé' : ', désactivé')"
+                (click)="togglePayment(m.id)"
+              >
+                <span class="switch-track"><span class="switch-thumb"></span></span>
+              </button>
             </div>
-            <button class="btn-link-sm" type="button">Modifier</button>
-          </li>
-        </ul>
-      </section>
+          }
+        </section>
+        <div class="field">
+          <label for="receipt-notes">Mentions imprimées sur les reçus PDF</label>
+          <textarea id="receipt-notes" class="textarea-box" rows="3" name="receiptNotes"
+                    placeholder="Raison sociale, identifiant fiscal, conditions de remboursement"
+                    [(ngModel)]="receiptNotes"></textarea>
+        </div>
+      </div>
+    }
 
-    </div>
-
-    <!-- ---- Colonne droite ---- -->
-    <div class="right-col">
-
-      <!-- Équipe & rôles -->
-      <section class="card" aria-label="Équipe et rôles">
-        <h2 class="card-title">Équipe &amp; rôles</h2>
-        <ul class="team-list" role="list">
-          @for (member of team(); track member.id) {
-            <li class="team-item">
-              <div class="member-cell">
-                <span class="avatar" aria-hidden="true">{{ member.initials }}</span>
-                <span class="member-name">{{ member.name }}</span>
+    <!-- ===== Relances ===== -->
+    @case ('reminders') {
+      <div class="grid-scroll">
+        <div class="rules-grid">
+          <div class="grid-row grid-row--head">
+            <span>Règle</span><span>Déclencheur</span><span>E-mail</span><span>SMS</span><span>WhatsApp</span>
+          </div>
+          <div>
+            @for (r of rules(); track r.id) {
+              <div class="grid-row">
+                <span class="text-strong">{{ r.label }}</span>
+                <span>{{ r.trigger }}</span>
+                <label class="checkbox-label">
+                  <input type="checkbox" [attr.aria-label]="r.label + ' par e-mail'" [checked]="r.email" (change)="toggleRule(r.id, 'email')" />
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" [attr.aria-label]="r.label + ' par SMS'" [checked]="r.sms" (change)="toggleRule(r.id, 'sms')" />
+                </label>
+                <span class="method-detail">Prévu en V2</span>
               </div>
-              <span class="role-badge" [ngClass]="roleClass(member.role)">{{ member.role }}</span>
-            </li>
-          }
-        </ul>
-        <button class="btn-invite" type="button">Inviter un membre</button>
-      </section>
-
-      <!-- Moyens de paiement -->
-      <section class="card" aria-label="Moyens de paiement acceptés">
-        <h2 class="card-title">Moyens de paiement</h2>
-        <ul class="toggle-list" role="list">
-          @for (method of paymentMethods(); track method.id) {
-            <li class="toggle-item">
-              <span class="toggle-label">{{ method.label }}</span>
-              <button
-                class="toggle"
-                type="button"
-                role="switch"
-                [attr.aria-checked]="method.enabled"
-                [class.toggle-on]="method.enabled"
-                (click)="togglePayment(method.id)"
-                [attr.aria-label]="method.label"
-              ></button>
-            </li>
-          }
-        </ul>
-      </section>
-
-    </div>
-  </div>
-
-  <!-- ===== ACTIONS ===== -->
-  <footer class="form-actions">
-    <button class="btn-cancel" type="button" (click)="cancel()">Annuler</button>
-    <button class="btn-save" type="button" (click)="save()">Enregistrer</button>
-  </footer>
-
+            }
+          </div>
+        </div>
+      </div>
+    }
+  }
 </div>
