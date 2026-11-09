@@ -1,162 +1,191 @@
 import { Component, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DataTable } from '@shared/data-table/data-table';
-import { ColumnDef } from '@shared/data-table/data-table.models';
+import { RouterLink } from '@angular/router';
 import { Fab, FabAction } from '@shared/fab/fab';
 
-export type MemberStatus = 'Actif' | 'À renouveler' | 'Expiré';
-export type FilterTab    = 'Tous' | 'Actifs' | 'À renouveler' | 'Expirés';
+export type MemberStatus = 'Actif' | 'Expire bientôt' | 'Impayé' | 'Expiré' | 'Gelé';
+export type SortKey = 'name' | 'expiry';
 
 export interface Member {
-  id: number;
-  initials: string;
+  id: string;
   name: string;
-  email: string;
-  plan: string;
-  expiration: string;
   status: MemberStatus;
+  plan: string;
+  coach: string;
+  /** Échéance au format ISO (AAAA-MM-JJ) pour le tri */
+  expiry: string;
+  lastVisit: string;
+  program: string;
+  visits30d: number;
+  phone: string;
+  email: string;
 }
 
-const ALL_MEMBERS: Member[] = [
-  { id: 1,  initials: 'TM', name: 'Thomas Martin',    email: 'thomas.martin@mail.com',   plan: 'Mensuel',     expiration: '31 oct. 2026', status: 'Actif' },
-  { id: 2,  initials: 'AD', name: 'Aïssatou Diallo',  email: 'aissatou.diallo@mail.com', plan: 'Trimestriel', expiration: '15 déc. 2026', status: 'Actif' },
-  { id: 3,  initials: 'AB', name: 'Adrien Blanc',      email: 'adrien.blanc@mail.com',    plan: 'Mensuel',     expiration: '17 oct. 2026', status: 'À renouveler' },
-  { id: 4,  initials: 'KR', name: 'Kevin Renaud',      email: 'kevin.renaud@mail.com',    plan: 'Mensuel',     expiration: '10 oct. 2026', status: 'Expiré' },
-  { id: 5,  initials: 'CA', name: 'Camille Aubert',    email: 'camille.aubert@mail.com',  plan: 'Annuel',      expiration: '01 jan. 2027', status: 'Actif' },
-  { id: 6,  initials: 'MT', name: 'Moussa Touré',      email: 'moussa.toure@mail.com',    plan: 'Mensuel',     expiration: '28 oct. 2026', status: 'Actif' },
-  { id: 7,  initials: 'SF', name: 'Sofia Ferreira',    email: 'sofia.ferreira@mail.com',  plan: 'Trimestriel', expiration: '21 oct. 2026', status: 'À renouveler' },
-  { id: 8,  initials: 'JD', name: 'Julien Dupont',     email: 'julien.dupont@mail.com',   plan: 'Mensuel',     expiration: '19 oct. 2026', status: 'À renouveler' },
-  { id: 9,  initials: 'MC', name: 'Marie Coulibaly',   email: 'marie.coulibaly@mail.com', plan: 'Annuel',      expiration: '18 oct. 2026', status: 'À renouveler' },
-  { id: 10, initials: 'PL', name: 'Pierre Lefebvre',   email: 'pierre.lefebvre@mail.com', plan: 'Mensuel',     expiration: '05 oct. 2026', status: 'Expiré' },
-  { id: 11, initials: 'EN', name: 'Emma Nguyen',       email: 'emma.nguyen@mail.com',     plan: 'Trimestriel', expiration: '20 nov. 2026', status: 'Actif' },
-  { id: 12, initials: 'RB', name: 'Rachid Bouazza',    email: 'rachid.bouazza@mail.com',  plan: 'Mensuel',     expiration: '30 oct. 2026', status: 'Actif' },
-];
-
-// ---- Icônes badge (SVG path d="") ----
-const BADGE_ICONS: Record<MemberStatus, string> = {
-  'Actif':         'M20 6 9 17 4 12',
-  'À renouveler':  'M12 9v4M12 16h.01M22 12A10 10 0 1 1 2 12a10 10 0 0 1 20 0z',
-  'Expiré':        'M18 6 6 18M6 6l12 12',
+const STATUS_TONES: Record<MemberStatus, string> = {
+  'Actif': 'success',
+  'Expire bientôt': 'warning',
+  'Impayé': 'danger',
+  'Expiré': 'danger',
+  'Gelé': 'neutral',
 };
 
-const BADGE_CLASSES: Record<MemberStatus, string> = {
-  'Actif':         'badge-actif',
-  'À renouveler':  'badge-a-renouveler',
-  'Expiré':        'badge-expire',
-};
+export const STATUSES = Object.keys(STATUS_TONES) as MemberStatus[];
+export const PLANS = ['Mensuel Essentiel', 'Mensuel Illimité', 'Trimestriel', 'Annuel'];
+export const COACHES = ['Malik T.', 'Fatou B.', 'Hugo L.'];
+
+/** Nombre total d'adhérents côté serveur (la liste n'en charge qu'une partie) */
+const TOTAL_ON_SERVER = 412;
+
+// ---- Données mockées (à remplacer par de vrais appels API) ----
+const ALL_MEMBERS: Member[] = (
+  [
+    ['A-0231', 'Inès Benali', 'Expire bientôt', 'Mensuel Illimité', 'Malik T.', '2026-11-11', 'Aujourd’hui', 'Remise en forme, 12 semaines', 14],
+    ['A-0187', 'Camille Roux', 'Impayé', 'Mensuel Illimité', 'Fatou B.', '2026-11-03', '05/11/2026', 'Prise de muscle, niveau 2', 9],
+    ['A-0312', 'Awa Diallo', 'Actif', 'Trimestriel', 'Hugo L.', '2026-11-14', 'Aujourd’hui', 'Perte de poids, 8 semaines', 17],
+    ['A-0098', 'Koffi Mensah', 'Expire bientôt', 'Mensuel Illimité', 'Malik T.', '2026-11-15', 'Aujourd’hui', 'Prise de muscle, niveau 3', 19],
+    ['A-0276', 'Thomas Lefèvre', 'Actif', 'Annuel', 'Fatou B.', '2027-06-30', 'Aujourd’hui', 'Cardio et endurance', 12],
+    ['A-0144', 'Yacine Haddad', 'Expiré', 'Mensuel Essentiel', 'Hugo L.', '2026-11-07', 'Aujourd’hui', 'Aucun programme', 6],
+    ['A-0259', 'Léa Moreau', 'Gelé', 'Trimestriel', 'Fatou B.', '2027-01-20', '12/10/2026', 'Remise en forme, 12 semaines', 0],
+    ['A-0203', 'Mamadou Sow', 'Actif', 'Mensuel Illimité', 'Malik T.', '2026-11-28', '19/10/2026', 'Prise de muscle, niveau 1', 2],
+    ['A-0325', 'Sarah Nguyen', 'Actif', 'Mensuel Illimité', 'Hugo L.', '2026-12-02', 'Aujourd’hui', 'Cardio et endurance', 15],
+    ['A-0118', 'Julien Petit', 'Expire bientôt', 'Mensuel Essentiel', 'Fatou B.', '2026-11-12', 'Aujourd’hui', 'Perte de poids, 8 semaines', 11],
+  ] as const
+).map(([id, name, status, plan, coach, expiry, lastVisit, program, visits30d]) => ({
+  id, name, status, plan, coach, expiry, lastVisit, program, visits30d,
+  phone: 'Non renseigné',
+  email: 'Non renseigné',
+}));
 
 @Component({
   selector: 'app-members',
-  imports: [FormsModule, DataTable, Fab],
+  imports: [FormsModule, RouterLink, Fab],
   templateUrl: './members.html',
   styleUrl:    './members.css',
 })
 export class Members {
-  readonly tabs: FilterTab[] = ['Tous', 'Actifs', 'À renouveler', 'Expirés'];
+  readonly statuses = STATUSES;
+  readonly plans = PLANS;
+  readonly coaches = COACHES;
 
-  search    = signal('');
-  activeTab = signal<FilterTab>('Tous');
+  // ---- Filtres et tri ----
+  readonly query = signal('');
+  readonly statusFilter = signal('');
+  readonly planFilter = signal('');
+  readonly sortKey = signal<SortKey | null>(null);
+  readonly sortDir = signal<1 | -1>(1);
 
-  // ---- Définition des colonnes passée au DataTable ----
-  readonly columns: ColumnDef<Member>[] = [
-    {
-      key:      'name',
-      label:    'Adhérent',
-      type:     'avatar-text',
-      sortable: true,
-      width:    '260px',
-      value:       row => row.name,
-      sortValue:   row => row.name,
-      avatarFn:    row => row.initials,
-      subValueFn:  row => row.email,
-    },
-    {
-      key:      'plan',
-      label:    'Forfait',
-      type:     'text',
-      sortable: true,
-      muted:    true,
-      value:    row => row.plan,
-    },
-    {
-      key:      'expiration',
-      label:    'Expiration',
-      type:     'date',
-      sortable: true,
-      muted:    true,
-      value:    row => row.expiration,
-    },
-    {
-      key:          'status',
-      label:        'Statut',
-      type:         'badge',
-      sortable:     true,
-      width:        '160px',
-      value:        row => row.status,
-      badgeClassFn: row => BADGE_CLASSES[row.status],
-      badgeIconFn:  row => BADGE_ICONS[row.status],
-    },
-  ];
+  /** Fiche dépliée (id de l'adhérent) */
+  readonly openId = signal<string | null>(ALL_MEMBERS[0].id);
 
-  // ---- Données filtrées transmises au DataTable ----
-  readonly filteredRows = computed<Member[]>(() => {
-    const q   = this.search().toLowerCase().trim();
-    const tab = this.activeTab();
+  // ---- Ajout ----
+  readonly adding = signal(false);
+  readonly draft = { name: '', phone: '', email: '', plan: 'Mensuel Illimité', coach: COACHES[0] };
+  private readonly added = signal<Member[]>([]);
 
-    return ALL_MEMBERS.filter(m => {
-      const matchTab =
-        tab === 'Tous' ||
-        (tab === 'Actifs'       && m.status === 'Actif') ||
-        (tab === 'À renouveler' && m.status === 'À renouveler') ||
-        (tab === 'Expirés'      && m.status === 'Expiré');
+  private readonly all = computed(() => [...this.added(), ...ALL_MEMBERS]);
 
-      const matchSearch =
-        !q ||
-        m.name.toLowerCase().includes(q) ||
-        m.email.toLowerCase().includes(q) ||
-        m.plan.toLowerCase().includes(q);
+  readonly rows = computed(() => {
+    const q = this.query().trim().toLowerCase();
+    const status = this.statusFilter();
+    const plan = this.planFilter();
+    const key = this.sortKey();
+    const dir = this.sortDir();
 
-      return matchTab && matchSearch;
-    });
+    const list = this.all().filter(
+      m =>
+        (!q || m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q)) &&
+        (!status || m.status === status) &&
+        (!plan || m.plan === plan),
+    );
+    if (!key) return list;
+    return [...list].sort((a, b) => a[key].localeCompare(b[key], 'fr') * dir);
   });
 
-  readonly total = computed(() => ALL_MEMBERS.length);
+  readonly totalCount = computed(() => TOTAL_ON_SERVER + this.added().length);
 
   // ---- FAB actions ----
   readonly fabActions: FabAction[] = [
-    {
-      id:       'add-member',
-      label:    'Ajouter un adhérent',
-      iconPath: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6',
-    },
-    {
-      id:       'export',
-      label:    'Exporter la liste',
-      iconPath: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
-    },
-    {
-      id:       'import',
-      label:    'Importer des adhérents',
-      iconPath: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12',
-    },
+    { id: 'add-member', label: 'Ajouter un adhérent', iconPath: 'M12 5v14M5 12h14' },
+    { id: 'send-qr', label: 'Envoyer les QR codes', iconPath: 'M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h6v6h-6z' },
+    { id: 'remind', label: 'Relancer la sélection', iconPath: 'M22 2L11 13M22 2l-7 20-4-9-9-4z' },
+    { id: 'import', label: 'Importer un listing', iconPath: 'M12 21V9M7 14l5-5 5 5M4 3h16' },
   ];
 
   // ---- Handlers ----
-  setTab(tab: FilterTab): void {
-    this.activeTab.set(tab);
+  tone(status: MemberStatus): string {
+    return STATUS_TONES[status];
   }
 
-  onSearch(value: string): void {
-    this.search.set(value);
+  formatDate(iso: string): string {
+    return iso.split('-').reverse().join('/');
   }
 
-  onRowClick(member: Member): void {
-    console.log('Voir fiche :', member.name);
-    // TODO: router.navigate(['/members', member.id])
+  toggleSort(key: SortKey): void {
+    if (this.sortKey() === key) {
+      this.sortDir.update(d => (d === 1 ? -1 : 1));
+    } else {
+      this.sortKey.set(key);
+      this.sortDir.set(1);
+    }
+  }
+
+  sortIcon(key: SortKey): string {
+    if (this.sortKey() !== key) return '↕';
+    return this.sortDir() === 1 ? '↑' : '↓';
+  }
+
+  resetFilters(): void {
+    this.query.set('');
+    this.statusFilter.set('');
+    this.planFilter.set('');
+    this.sortKey.set(null);
+    this.sortDir.set(1);
+  }
+
+  toggleRow(id: string): void {
+    this.openId.update(cur => (cur === id ? null : id));
   }
 
   onFabAction(action: FabAction): void {
+    if (action.id === 'add-member') {
+      this.adding.set(true);
+      return;
+    }
     console.log('FAB action :', action.id);
-    // TODO: ouvrir le formulaire selon action.id
+    // TODO: brancher les autres actions sur les services
+  }
+
+  cancelAdd(): void {
+    this.adding.set(false);
+    this.draft.name = '';
+    this.draft.phone = '';
+    this.draft.email = '';
+  }
+
+  saveAdd(): void {
+    const name = this.draft.name.trim();
+    if (!name) return;
+    const id = 'A-0' + (TOTAL_ON_SERVER + 1 + this.added().length);
+    const expiry = new Date();
+    expiry.setMonth(expiry.getMonth() + 1);
+    this.added.update(list => [
+      {
+        id,
+        name,
+        status: 'Actif',
+        plan: this.draft.plan,
+        coach: this.draft.coach,
+        expiry: expiry.toISOString().slice(0, 10),
+        lastVisit: 'Aucune',
+        program: 'À attribuer',
+        visits30d: 0,
+        phone: this.draft.phone.trim() || 'Non renseigné',
+        email: this.draft.email.trim() || 'Non renseigné',
+      },
+      ...list,
+    ]);
+    this.openId.set(id);
+    this.cancelAdd();
+    // TODO: POST /api/members
   }
 }

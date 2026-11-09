@@ -1,0 +1,162 @@
+/* ================================================================
+   ACCUEIL — encaissement au comptoir
+   ================================================================ */
+
+.reception-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+/* ---- Encaissement ---- */
+.checkout {
+  flex: 1 1 400px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.hits {
+  display: flex;
+  flex-direction: column;
+}
+
+.hit {
+  min-height: 52px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hit:hover {
+  background: var(--color-surface-raised);
+}
+
+.hit--selected,
+.hit--selected:hover {
+  background: var(--color-surface-selected);
+}
+
+.hit .status-dot {
+  width: 12px;
+  height: 12px;
+}
+
+.hit-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hit-name {
+  display: block;
+  font-size: var(--font-size-base);
+  line-height: 20px;
+  font-weight: var(--font-weight-bold);
+}
+
+.hit-meta {
+  display: block;
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 20px;
+  color: var(--color-text-soft);
+}
+
+.modes {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.modes legend {
+  margin-bottom: 6px;
+}
+
+.mode-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.mode-btn {
+  flex: 1 1 96px;
+  min-height: var(--touch-target);
+  border: 1px solid var(--color-text);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.mode-btn[aria-pressed='true'] {
+  background: var(--color-text);
+  color: var(--color-surface);
+}
+
+.checkout-total {
+  padding-top: var(--space-3);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-base);
+}
+
+.checkout-amount {
+  font-size: 26px;
+  line-height: 32px;
+  font-weight: var(--font-weight-black);
+}
+
+.confirmation {
+  padding: var(--space-3) 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-dark-panel);
+  color: var(--color-on-dark);
+  font-size: var(--font-size-base);
+  line-height: 22px;
+}
+
+.confirmation a {
+  color: var(--palette-sand-300);
+  font-weight: var(--font-weight-bold);
+}
+
+/* ---- Encaissements du jour ---- */
+.today {
+  flex: 1.5 1 460px;
+}
+
+.today-grid {
+  min-width: 600px;
+}
+
+.today-grid .grid-row {
+  grid-template-columns: 56px 1.6fr 1fr 1fr 64px;
+  gap: var(--space-3);
+}
+
+.today-grid .grid-row--head {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  font-size: var(--font-size-sm);
+}

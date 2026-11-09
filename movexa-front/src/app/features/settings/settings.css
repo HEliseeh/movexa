@@ -1,356 +1,66 @@
-/* ============================================================
-   PAGE PARAMÈTRES
-   ============================================================ */
+/* ================================================================
+   PARAMÈTRES — salle, équipe, paiements, relances
+   ================================================================ */
 
-.page {
-  padding: var(--space-6);
-  max-width: 1400px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-}
-
-/* ---- En-tête ---- */
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
-.page-title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text);
-}
-
-.page-subtitle {
-  margin-top: var(--space-1);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
-
-/* ---- Grille 2 colonnes ---- */
-.settings-grid {
+.gym-form {
+  max-width: 720px;
+  padding: var(--space-6) var(--space-5);
   display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: var(--space-5);
-  align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-5) 32px;
 }
 
-.left-col,
-.right-col {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-}
-
-/* ---- Card ---- */
-.card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.card-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-}
-
-/* ---- Formulaire profil ---- */
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-4);
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.field-label {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-muted);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.field-input {
-  width: 100%;
-  padding: var(--space-3);
-  font-size: var(--font-size-sm);
-  color: var(--color-text);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.field-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-focus-ring);
-}
-
-.input-suffix-wrapper {
-  position: relative;
-}
-
-.input-suffix-wrapper .field-input {
-  padding-right: 7rem;
-}
-
-.input-suffix {
-  position: absolute;
-  right: var(--space-3);
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-/* ---- Listes toggle ---- */
-.toggle-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.toggle-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.toggle-item:last-child { border-bottom: none; }
-
-.toggle-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-
-.toggle-label {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
-}
-
-.toggle-desc {
-  font-size: var(--font-size-xs);
-  color: var(--color-primary);
-}
-
-/* ---- Toggle switch (même composant que Access) ---- */
-.toggle {
-  position: relative;
-  flex-shrink: 0;
-  width: 44px;
-  height: 24px;
-  border-radius: var(--radius-full);
-  background: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
-  cursor: pointer;
-  transition: background var(--transition-base), border-color var(--transition-base);
-}
-
-.toggle::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 16px;
-  height: 16px;
-  border-radius: var(--radius-full);
-  background: var(--color-text-muted);
-  transition: transform var(--transition-base), background var(--transition-base);
-}
-
-.toggle.toggle-on {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-}
-
-.toggle.toggle-on::after {
-  transform: translateX(20px);
-  background: var(--color-on-primary);
-}
-
-.btn-link-sm {
-  flex-shrink: 0;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-primary);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  white-space: nowrap;
-  transition: color var(--transition-fast);
-}
-
-.btn-link-sm:hover { color: var(--color-primary-hover); }
-
-/* ---- Équipe ---- */
-.team-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.team-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.team-item:last-child { border-bottom: none; }
-
-.member-cell {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  border-radius: var(--radius-full);
-  background: var(--color-surface-raised);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-}
-
-.member-name {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
-}
-
-/* Badges rôle */
-.role-badge {
-  flex-shrink: 0;
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  border: 1px solid transparent;
-}
-
-.role-admin {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-}
-
-.role-coach {
-  background: var(--color-info-bg);
-  color: var(--color-info);
-  border-color: var(--color-info);
-}
-
-.role-accueil {
-  background: var(--color-surface-raised);
-  color: var(--color-text-muted);
-  border-color: var(--color-border);
-}
-
-/* Bouton inviter */
-.btn-invite {
-  width: 100%;
-  padding: var(--space-3);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-primary);
-  background: none;
-  border: 1px solid var(--color-primary);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
-  margin-top: var(--space-2);
-}
-
-.btn-invite:hover {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-}
-
-/* ---- Footer actions ---- */
 .form-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: var(--space-3);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
 }
 
-.btn-cancel {
-  padding: var(--space-3) var(--space-5);
+.saved,
+.method-detail {
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-muted);
-  background: none;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: color var(--transition-fast), border-color var(--transition-fast);
+  color: var(--color-text-soft);
 }
 
-.btn-cancel:hover {
-  color: var(--color-text);
-  border-color: var(--color-text-muted);
+.team-toolbar {
+  justify-content: flex-end;
 }
 
-.btn-save {
-  padding: var(--space-3) var(--space-6);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-on-primary);
-  background: var(--color-primary);
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background var(--transition-fast);
+.team-grid {
+  min-width: 780px;
 }
 
-.btn-save:hover  { background: var(--color-primary-hover); }
-.btn-save:active { background: var(--color-primary-active); }
-
-/* ---- Responsive ---- */
-@media (max-width: 1024px) {
-  .settings-grid { grid-template-columns: 1fr; }
+.team-grid .grid-row {
+  grid-template-columns: 1.5fr 1fr 1.3fr 1fr 1fr 96px;
 }
 
-@media (max-width: 640px) {
-  .page      { padding: var(--space-4); }
-  .form-grid { grid-template-columns: 1fr; }
+.payments-settings {
+  max-width: 720px;
+  padding: var(--space-6) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.section-title {
+  margin-bottom: var(--space-2);
+}
+
+.method {
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-top: 1px solid var(--color-border-soft);
+  font-size: var(--font-size-base);
+  line-height: 22px;
+}
+
+.rules-grid {
+  min-width: 760px;
+}
+
+.rules-grid .grid-row {
+  grid-template-columns: 2fr 1fr 80px 80px 120px;
 }

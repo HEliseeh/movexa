@@ -1,5 +1,5 @@
-import { Component, computed, inject } from '@angular/core';
-import { CurrentUserStore } from '@core/auth/current-user.store';
+import { Component, computed, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Fab, FabAction } from '@shared/fab/fab';
 
 /** KPI affiché dans les cartes du haut */
@@ -7,131 +7,142 @@ export interface KpiCard {
   label: string;
   value: string;
   sub: string;
-  subPositive?: boolean; // true = vert, false = rouge, undefined = neutre
 }
 
-/** Une entrée de la liste « derniers accès » */
-export interface AccessEntry {
+export type StatusTone = 'success' | 'warning' | 'danger' | 'neutral';
+
+/** Un adhérent à relancer */
+export interface Reminder {
+  id: number;
+  name: string;
+  reason: string;
+  tone: StatusTone;
+}
+
+/** Un abonnement qui arrive à échéance */
+export interface Expiration {
   name: string;
   plan: string;
-  time: string;
-  valid: boolean;
+  date: string;
+  status: string;
+  tone: StatusTone;
+  amount: string;
 }
 
-/** Un adhérent à renouveler */
-export interface RenewalEntry {
-  initials: string;
-  name: string;
-  expiresOn: string;
+/** Une barre du graphe : nombre d'entrées sur une heure */
+interface HourPoint {
+  hour: number;
+  value: number;
 }
 
-/** Un point du graphe de fréquentation (barres) */
-export interface FreqPoint {
-  day: string;
-  value: number; // 0-100 (pourcentage de la hauteur max)
-  isToday: boolean;
-}
+type HourKind = 'past' | 'current' | 'average';
+
+/** Échelle du graphe : 60 entrées = 200 px */
+const CHART_MAX = 60;
+const CHART_HEIGHT = 200;
 
 @Component({
   selector: 'app-dashboard',
-  imports: [Fab],
+  imports: [Fab, RouterLink],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
 export class Dashboard {
-  private store = inject(CurrentUserStore);
-
-  readonly user = this.store.user;
-
-  readonly gymName = computed(() => 'NOM DE LA SALLE');
-
-  readonly today = computed(() => {
-    return new Intl.DateTimeFormat('fr-FR', {
+  readonly today = (() => {
+    const text = new Intl.DateTimeFormat('fr-FR', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
       year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(new Date());
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  })();
+
+  // ---- Données mockées (à remplacer par de vrais appels API) ----
+
+  readonly kpis: KpiCard[] = [
+    { label: 'Adhérents actifs', value: '412', sub: '18 nouveaux ce mois-ci' },
+    { label: "Présences aujourd'hui", value: '186', sub: '47 dans la salle maintenant' },
+    { label: 'Encaissé ce mois-ci', value: '3 480 000 FCFA', sub: 'Prévision du mois : 8 650 000 FCFA' },
+    { label: 'Impayés', value: '340 000 FCFA', sub: '12 adhérents concernés' },
+  ];
+
+  /** Heure courante (les heures suivantes affichent la moyenne) */
+  readonly currentHour = 18;
+
+  private readonly hours: HourPoint[] = [
+    [6, 14], [7, 28], [8, 36], [9, 31], [10, 22], [11, 18], [12, 33], [13, 29], [14, 15],
+    [15, 17], [16, 24], [17, 41], [18, 52], [19, 48], [20, 39], [21, 24], [22, 9],
+  ].map(([hour, value]) => ({ hour, value }));
+
+  readonly gridLines = [0, 20, 40, 60].map(value => ({ value, px: this.scale(value) }));
+
+  readonly bars = this.hours.map(p => {
+    const kind = this.kindOf(p.hour);
+    return {
+      ...p,
+      kind,
+      px: this.scale(p.value),
+      tick: p.hour % 2 === 0 ? `${p.hour} h` : '',
+      aria: `${p.hour} h : ${p.value} ${kind === 'average' ? 'entrées en moyenne' : 'entrées'}`,
+    };
   });
+
+  /** Heure survolée dans le graphe (null = heure courante) */
+  readonly hoveredHour = signal<number | null>(null);
+
+  readonly chartReadout = computed(() => {
+    const hour = this.hoveredHour() ?? this.currentHour;
+    const point = this.hours.find(p => p.hour === hour) ?? this.hours[0];
+    const kind = this.kindOf(point.hour);
+    const suffix =
+      kind === 'past' ? 'entrées' : kind === 'current' ? 'entrées, heure en cours' : 'entrées en moyenne';
+    return `${point.hour} h : ${point.value} ${suffix}`;
+  });
+
+  readonly reminders: Reminder[] = [
+    { id: 1, name: 'Camille Roux', reason: 'Impayé : 30 000 FCFA depuis 6 jours', tone: 'danger' },
+    { id: 2, name: 'Yacine Haddad', reason: 'Abonnement expiré le 7 nov.', tone: 'danger' },
+    { id: 3, name: 'Inès Benali', reason: 'Expire dans 2 jours', tone: 'warning' },
+    { id: 4, name: 'Mamadou Sow', reason: 'Absent depuis 21 jours', tone: 'warning' },
+  ];
+
+  /** Relances déjà envoyées (par id) */
+  readonly sent = signal<ReadonlySet<number>>(new Set());
+
+  readonly expirations: Expiration[] = [
+    { name: 'Inès Benali', plan: 'Mensuel Illimité', date: '11/11/2026', status: 'Expire bientôt', tone: 'warning', amount: '30 000 FCFA' },
+    { name: 'Julien Petit', plan: 'Mensuel Essentiel', date: '12/11/2026', status: 'Expire bientôt', tone: 'warning', amount: '20 000 FCFA' },
+    { name: 'Awa Diallo', plan: 'Trimestriel', date: '14/11/2026', status: 'Renouvellement auto', tone: 'success', amount: '75 000 FCFA' },
+    { name: 'Koffi Mensah', plan: 'Mensuel Illimité', date: '15/11/2026', status: 'Expire bientôt', tone: 'warning', amount: '30 000 FCFA' },
+  ];
 
   // ---- Actions du FAB spécifiques à cet écran ----
   readonly fabActions: FabAction[] = [
-    {
-      id: 'add-member',
-      label: 'Ajouter un adhérent',
-      iconPath: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6',
-    },
-    {
-      id: 'add-plan',
-      label: 'Créer un forfait',
-      iconPath: 'M2 10h20M6 6h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z',
-    },
-    {
-      id: 'add-course',
-      label: 'Planifier un cours',
-      iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z',
-    },
-    {
-      id: 'export',
-      label: 'Exporter les données',
-      iconPath: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
-    },
+    { id: 'add-member', label: 'Ajouter un adhérent', iconPath: 'M12 5v14M5 12h14' },
+    { id: 'add-payment', label: 'Enregistrer un paiement', iconPath: 'M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2M2 10h20' },
+    { id: 'send-reminders', label: 'Envoyer les relances', iconPath: 'M22 2L11 13M22 2l-7 20-4-9-9-4z' },
+    { id: 'export', label: 'Exporter les données', iconPath: 'M12 3v12M7 10l5 5 5-5M4 21h16' },
   ];
+
+  sendReminder(id: number): void {
+    this.sent.update(s => new Set(s).add(id));
+    // TODO: appel API de relance
+  }
 
   onFabAction(action: FabAction): void {
     console.log('Action déclenchée :', action.id);
     // À brancher sur les services quand les features seront prêtes
   }
 
-  // ---- Données mockées (à remplacer par de vrais appels API) ----
+  private scale(value: number): number {
+    return Math.round((value / CHART_MAX) * CHART_HEIGHT);
+  }
 
-  readonly kpis: KpiCard[] = [
-    {
-      label: 'ADHÉRENTS ACTIFS',
-      value: '142',
-      sub: '+8 ce mois',
-      subPositive: true,
-    },
-    {
-      label: "ENTRÉES AUJOURD'HUI",
-      value: '37',
-      sub: 'Pic prévu à 18:30',
-    },
-    {
-      label: 'À RENOUVELER (7 JOURS)',
-      value: '12',
-      sub: '3 relances envoyées',
-    },
-    {
-      label: 'REVENUS DU MOIS',
-      value: '2 450 €',
-      sub: '+12 % vs mois dernier',
-      subPositive: true,
-    },
-  ];
-
-  readonly freqData: FreqPoint[] = [
-    { day: 'Lun', value: 55, isToday: false },
-    { day: 'Mar', value: 80, isToday: false },
-    { day: 'Mer', value: 70, isToday: false },
-    { day: 'Jeu', value: 90, isToday: true },
-    { day: 'Ven', value: 65, isToday: false },
-    { day: 'Sam', value: 40, isToday: false },
-    { day: 'Dim', value: 25, isToday: false },
-  ];
-
-  readonly renewals: RenewalEntry[] = [
-    { initials: 'AB', name: 'Adrien Blanc',    expiresOn: '17 oct. 2026' },
-    { initials: 'MC', name: 'Marie Coulibaly', expiresOn: '18 oct. 2026' },
-    { initials: 'JD', name: 'Julien Dupont',   expiresOn: '19 oct. 2026' },
-    { initials: 'SF', name: 'Sofia Ferreira',  expiresOn: '21 oct. 2026' },
-  ];
-
-  readonly recentAccess: AccessEntry[] = [
-    { name: 'Thomas Martin',   plan: 'Mensuel',   time: '09:14', valid: true  },
-    { name: 'Aïssatou Diallo', plan: 'Trimestriel', time: '09:02', valid: true  },
-    { name: 'Kevin Renaud',    plan: 'Mensuel',   time: '08:55', valid: false },
-    { name: 'Camille Aubert',  plan: 'Annuel',    time: '08:41', valid: true  },
-    { name: 'Moussa Touré',    plan: 'Mensuel',   time: '08:30', valid: true  },
-  ];
+  private kindOf(hour: number): HourKind {
+    if (hour < this.currentHour) return 'past';
+    return hour === this.currentHour ? 'current' : 'average';
+  }
 }

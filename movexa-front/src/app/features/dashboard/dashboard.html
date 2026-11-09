@@ -1,90 +1,86 @@
-<div class="dashboard">
+<div class="page">
 
   <!-- ===== EN-TÊTE ===== -->
-  <header class="dash-header">
-    <div class="dash-title-block">
-      <h1 class="dash-title">Tableau de bord</h1>
-      <p class="dash-subtitle">
-        <span class="gym-name">{{ gymName() }}</span>
-        <span class="separator" aria-hidden="true">·</span>
-        <span class="dash-date">{{ today() }}</span>
-      </p>
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Tableau de bord</h1>
+      <p class="page-subtitle">{{ today }}</p>
     </div>
-
-    <div class="dash-search">
-      <label class="search-wrapper" for="member-search">
-        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <input
-          id="member-search"
-          type="search"
-          class="search-input"
-          placeholder="Rechercher un adhérent"
-          aria-label="Rechercher un adhérent"
-        />
-      </label>
-    </div>
+    <button type="button" class="btn btn-primary">Exporter le rapport</button>
   </header>
 
-  <!-- ===== KPI CARDS ===== -->
+  <!-- ===== KPI ===== -->
   <section class="kpi-grid" aria-label="Indicateurs clés">
     @for (kpi of kpis; track kpi.label) {
       <article class="kpi-card">
-        <span class="kpi-label">{{ kpi.label }}</span>
-        <span class="kpi-value">{{ kpi.value }}</span>
-        <span
-          class="kpi-sub"
-          [class.positive]="kpi.subPositive === true"
-          [class.negative]="kpi.subPositive === false"
-        >{{ kpi.sub }}</span>
+        <div class="kpi-label">{{ kpi.label }}</div>
+        <div class="kpi-value">{{ kpi.value }}</div>
+        <div class="kpi-sub">{{ kpi.sub }}</div>
       </article>
     }
   </section>
 
-  <!-- ===== LIGNE CENTRALE : graphe + renouvellements ===== -->
+  <!-- ===== Graphe + relances ===== -->
   <div class="middle-row">
 
-    <!-- Graphe fréquentation -->
-    <section class="card freq-card" aria-label="Fréquentation des 7 derniers jours">
-      <div class="card-header">
-        <h2 class="card-title">Fréquentation</h2>
-        <span class="card-meta">7 derniers jours</span>
+    <section class="card chart-card">
+      <div class="chart-head">
+        <h2 class="card-title">Présences d'aujourd'hui, par heure</h2>
+        <div class="chart-readout" aria-live="polite">{{ chartReadout() }}</div>
       </div>
 
-      <div class="bar-chart" role="img" aria-label="Graphe en barres de la fréquentation hebdomadaire">
-        @for (point of freqData; track point.day) {
-          <div class="bar-col">
-            <div
-              class="bar"
-              [class.bar-today]="point.isToday"
-              [style.height.%]="point.value"
-              role="presentation"
-            ></div>
-            <span class="bar-label" [class.label-today]="point.isToday">{{ point.day }}</span>
+      <div class="chart">
+        @for (line of gridLines; track line.value) {
+          <div class="chart-gridline" [style.bottom.px]="line.px">
+            <span class="chart-gridlabel">{{ line.value }}</span>
           </div>
         }
+        <div class="chart-bars">
+          @for (bar of bars; track bar.hour) {
+            <button
+              type="button"
+              class="chart-bar"
+              [attr.aria-label]="bar.aria"
+              (mouseenter)="hoveredHour.set(bar.hour)"
+              (focus)="hoveredHour.set(bar.hour)"
+              (mouseleave)="hoveredHour.set(null)"
+              (blur)="hoveredHour.set(null)"
+            >
+              <span class="chart-bar-fill" [class]="'chart-bar-fill chart-bar-fill--' + bar.kind" [style.height.px]="bar.px"></span>
+            </button>
+          }
+        </div>
+      </div>
+      <div class="chart-ticks" aria-hidden="true">
+        @for (bar of bars; track bar.hour) {
+          <span>{{ bar.tick }}</span>
+        }
+      </div>
+
+      <div class="chart-legend">
+        <span><span class="legend-swatch chart-bar-fill--past"></span>Entrées enregistrées</span>
+        <span><span class="legend-swatch chart-bar-fill--current"></span>Heure en cours</span>
+        <span><span class="legend-swatch chart-bar-fill--average"></span>Moyenne habituelle</span>
       </div>
     </section>
 
-    <!-- À renouveler -->
-    <section class="card renewal-card" aria-label="Adhérents à renouveler">
-      <div class="card-header">
-        <div>
-          <h2 class="card-title">À renouveler</h2>
-          <p class="card-subtitle">Relance par WhatsApp ou SMS</p>
-        </div>
-      </div>
-
-      <ul class="renewal-list" role="list">
-        @for (r of renewals; track r.name) {
-          <li class="renewal-item">
-            <span class="renewal-avatar" aria-hidden="true">{{ r.initials }}</span>
-            <div class="renewal-info">
-              <span class="renewal-name">{{ r.name }}</span>
-              <span class="renewal-date">Expire le {{ r.expiresOn }}</span>
+    <section class="card reminders-card">
+      <h2 class="card-title">Relances à faire</h2>
+      <ul class="reminder-list">
+        @for (r of reminders; track r.id) {
+          <li class="reminder">
+            <span class="status-dot" [class]="'status-dot status-dot--' + r.tone"></span>
+            <div class="reminder-info">
+              <div class="text-strong">{{ r.name }}</div>
+              <div class="reminder-reason">{{ r.reason }}</div>
             </div>
-            <button class="btn-relance" type="button">Relancer</button>
+            <button
+              type="button"
+              class="btn btn-outline btn-sm"
+              [class.is-done]="sent().has(r.id)"
+              [disabled]="sent().has(r.id)"
+              (click)="sendReminder(r.id)"
+            >{{ sent().has(r.id) ? 'Envoyée' : 'Relancer' }}</button>
           </li>
         }
       </ul>
@@ -92,50 +88,30 @@
 
   </div>
 
-  <!-- ===== DERNIERS ACCÈS ===== -->
-  <section class="card access-card" aria-label="Derniers accès enregistrés">
-    <div class="card-header">
-      <h2 class="card-title">Derniers accès</h2>
-      <a href="#" class="link-tout-voir">Tout voir</a>
+  <!-- ===== Échéances ===== -->
+  <section class="card card--flush">
+    <div class="card-head">
+      <h2 class="card-title">Abonnements à échéance sous 7 jours</h2>
+      <a routerLink="/subscriptions" class="text-strong">Voir tous les abonnements</a>
     </div>
-
-    <div class="table-wrapper" role="region" aria-label="Tableau des derniers accès" tabindex="0">
-      <table class="access-table">
-        <thead>
-          <tr>
-            <th scope="col">ADHÉRENT</th>
-            <th scope="col">FORFAIT</th>
-            <th scope="col">HEURE</th>
-            <th scope="col">STATUT</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (entry of recentAccess; track entry.name + entry.time) {
-            <tr>
-              <td class="td-name">{{ entry.name }}</td>
-              <td class="td-plan">{{ entry.plan }}</td>
-              <td class="td-time">{{ entry.time }}</td>
-              <td class="td-status">
-                @if (entry.valid) {
-                  <span class="badge badge-valid">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                    Accès validé
-                  </span>
-                } @else {
-                  <span class="badge badge-denied">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                    Accès refusé
-                  </span>
-                }
-              </td>
-            </tr>
+    <div class="grid-scroll">
+      <div class="expirations">
+        <div class="grid-row grid-row--head">
+          <span>Adhérent</span><span>Formule</span><span>Échéance</span><span>Statut</span>
+          <span class="text-right">Montant</span>
+        </div>
+        <div>
+          @for (e of expirations; track e.name) {
+            <div class="grid-row grid-row--roomy">
+              <span>{{ e.name }}</span>
+              <span>{{ e.plan }}</span>
+              <span>{{ e.date }}</span>
+              <span class="status"><span class="status-dot" [class]="'status-dot status-dot--' + e.tone"></span>{{ e.status }}</span>
+              <span class="text-right">{{ e.amount }}</span>
+            </div>
           }
-        </tbody>
-      </table>
+        </div>
+      </div>
     </div>
   </section>
 

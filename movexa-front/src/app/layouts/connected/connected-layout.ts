@@ -1,45 +1,35 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/material/sidenav';
-import { MatNavList } from '@angular/material/list';
-import { RouterOutlet } from '@angular/router';
-import { AuthService } from '@core/auth/auth.service';
-import { CurrentUserStore } from '@core/auth/current-user.store';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
 import { MenuComponent } from '@core/components/menu-component/menu-component';
 import { Topbar } from '@core/components/topbar/topbar';
 import { MENU_ITEMS, MenuStep } from '@shared/models/Navigation.model';
 
 @Component({
   selector: 'app-connected-layout',
-  imports: [
-    RouterOutlet,
-    MatSidenavContainer,
-    MatSidenav,
-    MatSidenavContent,
-    MatNavList,
-    MenuComponent,
-    Topbar,
-  ],
+  imports: [RouterOutlet, MenuComponent, Topbar],
   templateUrl: './connected-layout.html',
   styleUrl:    './connected-layout.scss',
 })
-export class ConnectedLayout implements OnInit {
-  private auth  = inject(AuthService);
-  private store = inject(CurrentUserStore);
-
-  /** true = sidebar expansée (250 px), false = réduite (64 px) */
-  isExpanded = signal(true);
+export class ConnectedLayout {
+  /** Menu latéral ouvert sur petit écran (sur grand écran il est toujours visible) */
+  readonly menuOpen = signal(false);
 
   /** Items de navigation déclarés dans Navigation.model.ts */
   readonly menuItems: MenuStep[] = MENU_ITEMS;
 
-  /** Hauteur de la topbar — sert à décaler le sidenav */
-  readonly TOPBAR_HEIGHT = 56;
-
-  ngOnInit(): void {
-    this.isExpanded.set(window.matchMedia('(min-width: 1200px)').matches);
+  constructor() {
+    // Referme le menu mobile après chaque navigation
+    inject(Router)
+      .events.pipe(
+        filter(e => e instanceof NavigationEnd),
+        takeUntilDestroyed(inject(DestroyRef)),
+      )
+      .subscribe(() => this.menuOpen.set(false));
   }
 
-  toggle(): void {
-    this.isExpanded.update(v => !v);
+  toggleMenu(): void {
+    this.menuOpen.update(v => !v);
   }
 }

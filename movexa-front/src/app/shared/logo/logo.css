@@ -1,0 +1,8 @@
+:host {
+  display: inline-flex;
+  line-height: 0;
+}
+
+.logo-light  { fill: var(--color-on-dark); }
+.logo-accent { fill: var(--color-primary); }
+.logo-ring   { fill: none; stroke: var(--color-on-dark); }

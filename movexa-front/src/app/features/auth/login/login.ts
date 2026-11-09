@@ -5,10 +5,11 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { switchMap } from 'rxjs';
 import { CurrentUserStore } from '@core/auth/current-user.store';
+import { Logo } from '@shared/logo/logo';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, Logo],
   templateUrl: './login.html',
   styleUrl: './login.css',
 })

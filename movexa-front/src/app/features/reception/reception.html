@@ -1,0 +1,136 @@
+<div class="page">
+
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Accueil</h1>
+      <p class="page-subtitle">Inscrire, encaisser et remettre un reçu au comptoir.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/members" class="btn btn-primary">Nouvelle inscription</a>
+      <a routerLink="/access" class="btn btn-outline">Ouvrir le contrôle d'accès</a>
+    </div>
+  </header>
+
+  <div class="reception-row">
+
+    <!-- ===== Encaissement ===== -->
+    <section class="card checkout">
+      <h2 class="card-title">Encaisser un paiement</h2>
+
+      <div class="field">
+        <label for="acc-search">Adhérent</label>
+        <input
+          id="acc-search"
+          class="input-line"
+          type="search"
+          autocomplete="off"
+          placeholder="Nom ou numéro d'adhérent"
+          [ngModel]="query()"
+          (ngModelChange)="query.set($event)"
+        />
+      </div>
+
+      <div class="hits" role="listbox" aria-label="Adhérents trouvés">
+        @for (m of results(); track m.id) {
+          <button
+            type="button"
+            role="option"
+            class="hit"
+            [class.hit--selected]="m.id === selectedId()"
+            [attr.aria-selected]="m.id === selectedId()"
+            (click)="selectedId.set(m.id)"
+          >
+            <span class="status-dot" [class]="'status-dot status-dot--' + m.tone"></span>
+            <span class="hit-info">
+              <span class="hit-name">{{ m.name }}</span>
+              <span class="hit-meta">{{ m.status }} · {{ m.plan }}</span>
+            </span>
+            <span class="hit-meta">{{ m.id }}</span>
+          </button>
+        } @empty {
+          <p class="hit-meta">Aucun adhérent trouvé.</p>
+        }
+      </div>
+
+      <div class="field">
+        <label for="acc-produit">Produit</label>
+        <select id="acc-produit" class="input-line" [ngModel]="productId()" (ngModelChange)="productId.set($event)">
+          @for (p of products; track p.id) {
+            <option [value]="p.id">{{ p.label }}, {{ fcfa(p.price) }}</option>
+          }
+        </select>
+      </div>
+
+      <fieldset class="field modes">
+        <legend>Moyen de paiement</legend>
+        <div class="mode-buttons">
+          @for (o of modes; track o.id) {
+            <button
+              type="button"
+              class="mode-btn"
+              [attr.aria-pressed]="o.id === mode()"
+              (click)="mode.set(o.id)"
+            >{{ o.label }}</button>
+          }
+        </div>
+      </fieldset>
+
+      @if (mode() === 'momo') {
+        <div class="field">
+          <label for="acc-momo">Numéro Mobile Money</label>
+          <input
+            id="acc-momo"
+            class="input-line"
+            type="tel"
+            placeholder="Numéro de l'adhérent"
+            [ngModel]="momoNumber()"
+            (ngModelChange)="momoNumber.set($event)"
+          />
+        </div>
+      }
+
+      <div class="checkout-total">
+        <span>Total à encaisser</span>
+        <span class="checkout-amount">{{ fcfa(product().price) }}</span>
+      </div>
+
+      <button type="button" class="btn btn-primary btn-lg" (click)="collect()">Encaisser et générer le reçu</button>
+
+      @if (confirmation()) {
+        <div class="confirmation" role="status">
+          <span>{{ confirmation() }}</span>
+          <a href="#" (click)="$event.preventDefault()">Télécharger le PDF</a>
+        </div>
+      }
+    </section>
+
+    <!-- ===== Encaissements du jour ===== -->
+    <section class="card card--flush today">
+      <div class="card-head">
+        <h2 class="card-title">Encaissements du jour</h2>
+        <span class="text-strong">Total : {{ fcfa(total()) }}</span>
+      </div>
+      <div class="grid-scroll">
+        <div class="today-grid">
+          <div class="grid-row grid-row--head">
+            <span>Heure</span><span>Adhérent</span><span>Moyen</span>
+            <span class="text-right">Montant</span><span class="text-right">Reçu</span>
+          </div>
+          <div>
+            @for (c of collections(); track $index) {
+              <div class="grid-row grid-row--roomy">
+                <span>{{ c.time }}</span>
+                <span>{{ c.name }}</span>
+                <span>{{ c.mode }}</span>
+                <span class="text-right nowrap">{{ fcfa(c.price) }}</span>
+                <a href="#" class="text-right text-strong" (click)="$event.preventDefault()">PDF</a>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="card-foot">{{ collections().length }} encaissements aujourd'hui</div>
+    </section>
+
+  </div>
+</div>

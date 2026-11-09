@@ -1,40 +1,37 @@
 @use '@angular/material' as mat;
 
 // ============================================================
-// THÈME MOVEXA — Material 3, mode dark
-// Primary : orange (closest to Movexa sand palette)
+// THÈME MOVEXA — Material 3, mode clair
+// Fond papier, navy pour le texte, sable pour l'action principale.
+// Les couleurs de référence sont dans src/styles/tokens.css.
 // ============================================================
 
 html {
   @include mat.theme((
     color: (
       primary:    mat.$orange-palette,
-      theme-type: dark,
+      theme-type: light,
     ),
-    typography: Roboto,
+    typography: Lato,
     density: -1,
   ));
 }
 
 // ---- Surcharges CSS pour coller aux tokens Movexa ----
 html {
-  --mat-sidenav-container-background-color:        #151927;
-  --mat-sidenav-content-background-color:          #1e2336;
-  --mat-toolbar-container-background-color:        #151927;
-  --mat-list-active-indicator-color:               rgba(200, 164, 126, 0.14);
-  --mat-sidenav-container-text-color:              #e8edef;
-  --mat-list-list-item-label-text-color:           #b9c6cb;
-  --mat-list-list-item-secondary-label-text-color: #94a7ae;
-  --mat-divider-color:                             #3f4a63;
-  --mat-icon-color:                                #b9c6cb;
-  --mat-list-list-item-ripple-color:               rgba(200, 164, 126, 0.12);
-  --mat-list-list-item-container-color:            transparent;
+  --mat-sys-primary:            #c8a47e;
+  --mat-sys-on-primary:         #1e2336;
+  --mat-sys-surface:            #ffffff;
+  --mat-sys-on-surface:         #1e2336;
+  --mat-sys-on-surface-variant: #5c6275;
+  --mat-sys-outline:            #8a8f9c;
+  --mat-sys-outline-variant:    #ddd9d1;
 }
 
 body {
-  color-scheme: dark;
-  background-color: var(--color-bg, #1e2336);
-  color: var(--color-text, #e8edef);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: light;
+  background-color: var(--color-bg, #efede8);
+  color: var(--color-text, #1e2336);
+  font-family: var(--font-family-base, 'Lato', system-ui, sans-serif);
   margin: 0;
 }
