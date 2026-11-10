@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        "user" est un mot réservé en PostgreSQL : Hibernate génère "from user" sans guillemets,
+        ce qui fait échouer les requêtes. On renomme la table (sans toucher à user.xml, déjà exécuté).
+    -->
+    <changeSet id="20261110000001-1" author="elisee">
+        <renameTable oldTableName="user" newTableName="app_user"/>
+    </changeSet>
+
+    <!-- Coordonnées : elles appartiennent à la personne (User), pas à l'adhésion (Member) -->
+    <changeSet id="20261110000001-2" author="elisee">
+        <addColumn tableName="app_user">
+            <column name="email" type="varchar(254)"/>
+            <column name="phone" type="varchar(20)"/>
+        </addColumn>
+        <addUniqueConstraint tableName="app_user" columnNames="email" constraintName="ux_app_user_email"/>
+    </changeSet>
+</databaseChangeLog>

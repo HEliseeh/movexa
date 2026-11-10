@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        Table member : l'adhésion d'une personne à la salle.
+        Un membre EST un user (relation 1-1) : user_id est obligatoire et unique.
+    -->
+    <changeSet id="20261110000002-1" author="elisee">
+        <createTable tableName="member">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="member_number" type="varchar(20)">
+                <constraints unique="true" uniqueConstraintName="ux_member_number"/>
+            </column>
+            <column name="user_id" type="bigint">
+                <constraints nullable="false" unique="true" uniqueConstraintName="ux_member_user_id"/>
+            </column>
+            <column name="status" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <!-- plan, coach, program : texte libre en attendant les entités Plan / Coach / Program -->
+            <column name="plan" type="varchar(100)"/>
+            <column name="coach" type="varchar(100)"/>
+            <column name="program" type="varchar(150)"/>
+            <column name="join_date" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expiry_date" type="date"/>
+            <!-- Provisoire : sera calculé à partir des passages quand le module Access existera -->
+            <column name="last_visit_date" type="date"/>
+            <column name="visits_last_30_days" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="20261110000002-2" author="elisee">
+        <addForeignKeyConstraint baseTableName="member" baseColumnNames="user_id"
+                                 constraintName="fk_member_user_id"
+                                 referencedTableName="app_user" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="member" indexName="idx_member_status">
+            <column name="status"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Données fictives : chargées uniquement avec le contexte Liquibase "faker" (profil dev) -->
+    <changeSet id="20261110000002-3-data" author="elisee" context="faker">
+        <loadData file="config/liquibase/fake-data/app_user.csv" separator=";" tableName="app_user" usePreparedStatements="true">
+            <column name="id" type="numeric"/>
+            <column name="first_name" type="string"/>
+            <column name="last_name" type="string"/>
+            <column name="age" type="numeric"/>
+            <column name="weight" type="numeric"/>
+            <column name="height" type="numeric"/>
+            <column name="sex" type="string"/>
+            <column name="comment_text" type="string"/>
+            <column name="status" type="string"/>
+            <column name="date_of_creation" type="datetime"/>
+            <column name="email" type="string"/>
+            <column name="phone" type="string"/>
+        </loadData>
+        <loadData file="config/liquibase/fake-data/member.csv" separator=";" tableName="member" usePreparedStatements="true">
+            <column name="id" type="numeric"/>
+            <column name="member_number" type="string"/>
+            <column name="user_id" type="numeric"/>
+            <column name="status" type="string"/>
+            <column name="plan" type="string"/>
+            <column name="coach" type="string"/>
+            <column name="program" type="string"/>
+            <column name="join_date" type="date"/>
+            <column name="expiry_date" type="date"/>
+            <column name="last_visit_date" type="date"/>
+            <column name="visits_last_30_days" type="numeric"/>
+        </loadData>
+    </changeSet>
+</databaseChangeLog>

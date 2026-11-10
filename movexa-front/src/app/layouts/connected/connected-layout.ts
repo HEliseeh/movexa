@@ -5,10 +5,11 @@ import { filter } from 'rxjs';
 import { MenuComponent } from '@core/components/menu-component/menu-component';
 import { Topbar } from '@core/components/topbar/topbar';
 import { MENU_ITEMS, MenuStep } from '@shared/models/Navigation.model';
+import { Toast } from '@shared/toast/toast';
 
 @Component({
   selector: 'app-connected-layout',
-  imports: [RouterOutlet, MenuComponent, Topbar],
+  imports: [RouterOutlet, MenuComponent, Topbar, Toast],
   templateUrl: './connected-layout.html',
   styleUrl:    './connected-layout.scss',
 })

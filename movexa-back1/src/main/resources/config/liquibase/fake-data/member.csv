@@ -1,0 +1,51 @@
+id;member_number;user_id;status;plan;coach;program;join_date;expiry_date;last_visit_date;visits_last_30_days
+1;A-0001;1;ACTIVE;Annuel;Malik T.;Aucun programme;2026-08-02;2027-08-27;2026-11-07;11
+2;A-0002;2;ACTIVE;Mensuel Essentiel;Hugo L.;Cardio et endurance;2025-09-27;2026-11-26;2026-11-07;16
+3;A-0003;3;ACTIVE;Mensuel Illimité;Malik T.;Aucun programme;2026-05-07;2026-12-02;2026-11-08;14
+4;A-0004;4;ACTIVE;Trimestriel;Hugo L.;Prise de muscle, niveau 3;2025-09-06;2026-11-13;2026-11-09;4
+5;A-0005;5;ACTIVE;Annuel;Hugo L.;Prise de muscle, niveau 3;2026-05-28;2027-04-02;2026-11-09;6
+6;A-0006;6;EXPIRED;Mensuel Illimité;Hugo L.;Remise en forme, 12 semaines;2025-05-18;2026-08-28;2026-08-28;0
+7;A-0007;7;ACTIVE;Annuel;Hugo L.;Prise de muscle, niveau 2;2025-04-28;2027-03-26;2026-11-10;19
+8;A-0008;8;ACTIVE;Annuel;Hugo L.;Perte de poids, 8 semaines;2026-05-13;2026-11-14;2026-11-08;2
+9;A-0009;9;ACTIVE;Mensuel Illimité;Malik T.;Remise en forme, 12 semaines;2025-10-04;2026-11-23;2026-11-10;19
+10;A-0010;10;ACTIVE;Mensuel Essentiel;Hugo L.;Aucun programme;2026-07-26;2026-12-03;2026-11-10;4
+11;A-0011;11;ACTIVE;Mensuel Illimité;Malik T.;Prise de muscle, niveau 1;2025-04-17;2026-12-10;2026-11-08;8
+12;A-0012;12;ACTIVE;Trimestriel;Malik T.;Remise en forme, 12 semaines;2026-09-30;2026-11-15;2026-11-09;19
+13;A-0013;13;ACTIVE;Trimestriel;Fatou B.;Prise de muscle, niveau 1;2026-08-10;2027-01-22;2026-11-08;9
+14;A-0014;14;ACTIVE;Annuel;Malik T.;Prise de muscle, niveau 3;2026-04-10;2027-01-05;2026-11-05;5
+15;A-0015;15;EXPIRED;Mensuel Essentiel;Malik T.;Aucun programme;2026-02-09;2026-10-06;2026-10-05;0
+16;A-0016;16;UNPAID;Mensuel Essentiel;Malik T.;Aucun programme;2026-08-31;2026-11-01;2026-11-07;6
+17;A-0017;17;ACTIVE;Annuel;Malik T.;Prise de muscle, niveau 1;2026-10-19;2027-06-05;2026-11-01;10
+18;A-0018;18;ACTIVE;Mensuel Essentiel;Malik T.;Perte de poids, 8 semaines;2025-03-07;2026-12-05;2026-11-07;3
+19;A-0019;19;UNPAID;Mensuel Illimité;Hugo L.;Perte de poids, 8 semaines;2026-08-12;2026-10-31;2026-10-28;0
+20;A-0020;20;ACTIVE;Mensuel Essentiel;Fatou B.;Prise de muscle, niveau 3;2025-08-18;2026-11-16;2026-11-07;20
+21;A-0021;21;EXPIRED;Trimestriel;Hugo L.;Prise de muscle, niveau 1;2025-07-10;2026-09-20;2026-09-20;0
+22;A-0022;22;ACTIVE;Mensuel Illimité;Hugo L.;Perte de poids, 8 semaines;2025-10-29;2026-11-20;2026-11-07;9
+23;A-0023;23;UNPAID;Trimestriel;Fatou B.;Perte de poids, 8 semaines;2024-12-11;2026-11-08;2026-11-03;1
+24;A-0024;24;FROZEN;Trimestriel;Malik T.;Cardio et endurance;2026-03-27;2027-03-07;NULL;0
+25;A-0025;25;EXPIRED;Trimestriel;Hugo L.;Cardio et endurance;2026-09-06;2026-10-30;2026-10-28;0
+26;A-0026;26;ACTIVE;Mensuel Essentiel;Malik T.;Prise de muscle, niveau 2;2026-06-29;2026-11-20;2026-11-10;6
+27;A-0027;27;ACTIVE;Mensuel Essentiel;Hugo L.;Prise de muscle, niveau 1;2025-10-20;2026-11-24;2026-11-10;9
+28;A-0028;28;ACTIVE;Mensuel Illimité;Malik T.;Aucun programme;2025-08-25;2026-11-11;2026-11-07;7
+29;A-0029;29;ACTIVE;Annuel;Malik T.;Cardio et endurance;2026-09-12;2027-07-16;2026-11-09;9
+30;A-0030;30;EXPIRED;Trimestriel;Malik T.;Remise en forme, 12 semaines;2026-01-09;2026-10-22;2026-10-20;0
+31;A-0031;31;FROZEN;Trimestriel;Fatou B.;Perte de poids, 8 semaines;2026-09-12;2026-12-23;2026-09-21;0
+32;A-0032;32;UNPAID;Mensuel Essentiel;Hugo L.;Prise de muscle, niveau 2;2025-08-01;2026-11-09;2026-10-26;4
+33;A-0033;33;UNPAID;Mensuel Essentiel;Malik T.;Prise de muscle, niveau 3;2025-12-18;2026-11-01;2026-10-28;2
+34;A-0034;34;EXPIRED;Mensuel Illimité;Hugo L.;Perte de poids, 8 semaines;2025-01-29;2026-08-19;2026-08-17;0
+35;A-0035;35;ACTIVE;Annuel;Hugo L.;Cardio et endurance;2025-07-26;2027-07-02;2026-11-01;8
+36;A-0036;36;FROZEN;Mensuel Essentiel;Fatou B.;Perte de poids, 8 semaines;2026-02-23;2027-03-06;NULL;0
+37;A-0037;37;FROZEN;Annuel;Malik T.;Cardio et endurance;2025-08-23;2027-02-28;2026-09-22;0
+38;A-0038;38;ACTIVE;Mensuel Essentiel;Malik T.;Aucun programme;2025-08-12;2026-11-25;2026-11-01;7
+39;A-0039;39;ACTIVE;Trimestriel;Fatou B.;Prise de muscle, niveau 2;2025-07-25;2027-02-04;2026-11-05;18
+40;A-0040;40;UNPAID;Trimestriel;Fatou B.;Prise de muscle, niveau 2;2025-05-06;2026-11-02;2026-11-04;5
+41;A-0041;41;ACTIVE;Mensuel Illimité;Fatou B.;Prise de muscle, niveau 3;2026-05-20;2026-11-25;2026-11-10;14
+42;A-0042;42;UNPAID;Annuel;Fatou B.;Aucun programme;2025-09-18;2026-10-31;2026-11-07;5
+43;A-0043;43;ACTIVE;Annuel;Hugo L.;Cardio et endurance;2025-04-18;2027-08-24;2026-11-01;9
+44;A-0044;44;ACTIVE;Mensuel Illimité;Hugo L.;Prise de muscle, niveau 3;2025-06-30;2026-11-12;2026-11-10;19
+45;A-0045;45;ACTIVE;Annuel;Fatou B.;Prise de muscle, niveau 2;2026-04-18;2026-12-13;2026-11-05;10
+46;A-0046;46;ACTIVE;Mensuel Essentiel;Malik T.;Aucun programme;2025-04-17;2026-11-19;2026-11-09;13
+47;A-0047;47;ACTIVE;Mensuel Illimité;Malik T.;Perte de poids, 8 semaines;2026-02-19;2026-11-22;2026-11-10;17
+48;A-0048;48;ACTIVE;Mensuel Essentiel;Hugo L.;Prise de muscle, niveau 1;2026-05-07;2026-11-13;2026-11-10;5
+49;A-0049;49;ACTIVE;Mensuel Illimité;Malik T.;Perte de poids, 8 semaines;2026-07-09;2026-12-10;2026-11-10;11
+50;A-0050;50;EXPIRED;Mensuel Essentiel;Fatou B.;Prise de muscle, niveau 1;2025-08-17;2026-07-17;2026-07-14;0

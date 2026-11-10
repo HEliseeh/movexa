@@ -1,4 +1,4 @@
-package com.mycompany.myapp.service.Dto;
+package com.mycompany.myapp.service.dto;
 
 import com.mycompany.myapp.domain.enumeration.Gender;
 import lombok.Getter;

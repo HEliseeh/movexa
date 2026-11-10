@@ -1,0 +1,23 @@
+<div class="confirm-backdrop" (keydown.escape)="onEscape()">
+  <div class="confirm" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+    <span class="confirm-icon" [class.confirm-icon--danger]="danger()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6" />
+      </svg>
+    </span>
+    <h2 id="confirm-title" class="confirm-title">{{ title() }}</h2>
+    @if (message()) {
+      <p id="confirm-text" class="confirm-text">{{ message() }}</p>
+    }
+    <div class="confirm-actions">
+      <button #cancelBtn type="button" class="btn btn-outline" [disabled]="busy()" (click)="cancelled.emit()">
+        {{ cancelLabel() }}
+      </button>
+      <button type="button" class="btn" [class.btn-danger]="danger()" [class.btn-primary]="!danger()"
+              [disabled]="busy()" (click)="confirmed.emit()">
+        {{ busy() ? 'Patientez…' : confirmLabel() }}
+      </button>
+    </div>
+  </div>
+</div>

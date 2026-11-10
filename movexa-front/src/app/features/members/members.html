@@ -57,7 +57,7 @@
                   <path [attr.d]="openId() === m.id ? 'M6 9l6 6 6-6' : 'M9 6l6 6-6 6'" />
                 </svg>
               </button>
-              <span>{{ m.id }}</span>
+              <span>{{ m.number }}</span>
               <span class="text-strong">{{ m.name }}</span>
               <span class="status"><span class="status-dot" [class]="'status-dot status-dot--' + tone(m.status)"></span>{{ m.status }}</span>
               <span>{{ m.plan }}</span>
@@ -81,14 +81,20 @@
                   <div><dt>Présences sur 30 jours</dt><dd>{{ m.visits30d }}</dd></div>
                 </dl>
                 <div class="page-actions">
-                  <button type="button" class="btn btn-outline">Modifier</button>
+                  <button type="button" class="btn btn-outline" (click)="openEdit(m.id)">Modifier</button>
                   <a routerLink="/subscriptions" class="btn btn-primary">Renouveler</a>
                 </div>
               </div>
             }
           </div>
         } @empty {
-          <p class="empty">Aucun adhérent trouvé pour ces filtres.</p>
+          @if (loading()) {
+            <p class="empty">Chargement des adhérents…</p>
+          } @else if (loadError()) {
+            <p class="empty">{{ loadError() }} <button type="button" class="btn btn-outline" (click)="load()">Réessayer</button></p>
+          } @else {
+            <p class="empty">Aucun adhérent trouvé pour ces filtres.</p>
+          }
         }
       </div>
     </div>
@@ -100,38 +106,12 @@
 <!-- ===== FAB actions rapides ===== -->
 <app-fab [actions]="fabActions" (actionTriggered)="onFabAction($event)" />
 
-<!-- ===== Panneau d'ajout ===== -->
-@if (adding()) {
-  <div class="drawer-backdrop" (click)="cancelAdd()" aria-hidden="true"></div>
-  <form class="drawer" aria-label="Ajouter un adhérent" (ngSubmit)="saveAdd()">
-    <h2 class="drawer-title">Ajouter un adhérent</h2>
-    <div class="field">
-      <label for="add-name">Nom complet</label>
-      <input id="add-name" class="input-line" name="name" required [(ngModel)]="draft.name" />
-    </div>
-    <div class="field">
-      <label for="add-phone">Téléphone</label>
-      <input id="add-phone" class="input-line" name="phone" type="tel" [(ngModel)]="draft.phone" />
-    </div>
-    <div class="field">
-      <label for="add-email">E-mail</label>
-      <input id="add-email" class="input-line" name="email" type="email" [(ngModel)]="draft.email" />
-    </div>
-    <div class="field">
-      <label for="add-plan">Formule</label>
-      <select id="add-plan" class="input-line" name="plan" [(ngModel)]="draft.plan">
-        @for (p of plans; track p) { <option [value]="p">{{ p }}</option> }
-      </select>
-    </div>
-    <div class="field">
-      <label for="add-coach">Coach référent</label>
-      <select id="add-coach" class="input-line" name="coach" [(ngModel)]="draft.coach">
-        @for (c of coaches; track c) { <option [value]="c">{{ c }}</option> }
-      </select>
-    </div>
-    <div class="drawer-actions">
-      <button type="button" class="btn btn-outline" (click)="cancelAdd()">Annuler</button>
-      <button type="submit" class="btn btn-primary">Enregistrer</button>
-    </div>
-  </form>
+<!-- ===== Pop-up ajouter / modifier ===== -->
+@if (formOpen()) {
+  <app-member-form
+    [member]="editing() ?? null"
+    (saved)="onSaved($event)"
+    (deleted)="onDeleted($event)"
+    (closed)="closeForm()"
+  />
 }
