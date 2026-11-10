@@ -2,7 +2,7 @@ package com.mycompany.myapp.service;
 
 import com.mycompany.myapp.domain.User;
 import com.mycompany.myapp.repository.UserRepository;
-import com.mycompany.myapp.service.Dto.UserDTO;
+import com.mycompany.myapp.service.dto.UserDTO;
 import com.mycompany.myapp.service.mapper.UserMapper;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;

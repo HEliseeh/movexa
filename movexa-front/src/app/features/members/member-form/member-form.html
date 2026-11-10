@@ -1,0 +1,183 @@
+<div class="mf-backdrop" (keydown.escape)="close()">
+  <form
+    class="mf"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="mf-title"
+    novalidate
+    [formGroup]="form"
+    (ngSubmit)="save()"
+  >
+    <!-- ===== EN-TÊTE ===== -->
+    <header class="mf-head">
+      <span class="mf-head-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path [attr.d]="isEdit()
+            ? 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z'
+            : 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6M22 11h-6'" />
+        </svg>
+      </span>
+      <div class="mf-head-text">
+        <h2 id="mf-title" class="mf-title">{{ isEdit() ? 'Modifier l’adhérent' : 'Ajouter un adhérent' }}</h2>
+        <p class="mf-subtitle">{{ subtitle() }}</p>
+      </div>
+      <button type="button" class="mf-close" aria-label="Fermer" (click)="close()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+    </header>
+
+    <!-- ===== CONTENU ===== -->
+    <div class="mf-body">
+      @if (errorSummary(); as summary) {
+        <div class="mf-alert" role="alert">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" aria-hidden="true">
+            <path d="M12 8v5M12 16.5v.5M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+          </svg>
+          <span>{{ summary }}</span>
+        </div>
+      }
+
+      <!-- Identité -->
+      <section class="mf-section">
+        <h3 class="mf-section-title">Identité</h3>
+        <div class="mf-identity">
+          <span class="mf-avatar" aria-hidden="true">
+            @if (initials()) {
+              {{ initials() }}
+            } @else {
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8" /></svg>
+            }
+          </span>
+        </div>
+        <div class="mf-grid">
+          <div class="field">
+            <label for="mf-firstName">Prénom <span class="req" aria-hidden="true">*</span></label>
+            <input #firstInput id="mf-firstName" class="input-line" formControlName="firstName" autocomplete="given-name"
+                   [class.invalid]="error('firstName')" [attr.aria-invalid]="!!error('firstName')"
+                   aria-describedby="mf-firstName-err" />
+            @if (error('firstName'); as e) { <span id="mf-firstName-err" class="mf-error">{{ e }}</span> }
+          </div>
+          <div class="field">
+            <label for="mf-lastName">Nom <span class="req" aria-hidden="true">*</span></label>
+            <input id="mf-lastName" class="input-line" formControlName="lastName" autocomplete="family-name"
+                   [class.invalid]="error('lastName')" [attr.aria-invalid]="!!error('lastName')"
+                   aria-describedby="mf-lastName-err" />
+            @if (error('lastName'); as e) { <span id="mf-lastName-err" class="mf-error">{{ e }}</span> }
+          </div>
+          <div class="field">
+            <label for="mf-phone">Téléphone <span class="req" aria-hidden="true">*</span></label>
+            <input id="mf-phone" class="input-line" type="tel" formControlName="phone" autocomplete="tel"
+                   [class.invalid]="error('phone')" [attr.aria-invalid]="!!error('phone')"
+                   aria-describedby="mf-phone-msg" />
+            @if (error('phone'); as e) {
+              <span id="mf-phone-msg" class="mf-error">{{ e }}</span>
+            } @else {
+              <span id="mf-phone-msg" class="mf-help">Sert aux rappels SMS et aux paiements MoMo.</span>
+            }
+          </div>
+          <div class="field">
+            <label for="mf-email">E-mail</label>
+            <input id="mf-email" class="input-line" type="email" formControlName="email" autocomplete="email"
+                   [class.invalid]="error('email')" [attr.aria-invalid]="!!error('email')"
+                   aria-describedby="mf-email-err" />
+            @if (error('email'); as e) { <span id="mf-email-err" class="mf-error">{{ e }}</span> }
+          </div>
+          <div class="field">
+            <label for="mf-birthDate">Date de naissance</label>
+            <input id="mf-birthDate" class="input-line" type="date" formControlName="birthDate" [max]="today"
+                   [class.invalid]="error('birthDate')" [attr.aria-invalid]="!!error('birthDate')"
+                   aria-describedby="mf-birthDate-err" />
+            @if (error('birthDate'); as e) { <span id="mf-birthDate-err" class="mf-error">{{ e }}</span> }
+          </div>
+        </div>
+      </section>
+
+      <!-- Abonnement -->
+      <section class="mf-section">
+        <h3 class="mf-section-title">Abonnement</h3>
+        <div class="mf-grid">
+          <div class="field">
+            <label for="mf-plan">Formule <span class="req" aria-hidden="true">*</span></label>
+            <select id="mf-plan" class="input-line" formControlName="plan"
+                    [class.invalid]="error('plan')" [attr.aria-invalid]="!!error('plan')"
+                    aria-describedby="mf-plan-err">
+              <option value="">Choisir une formule</option>
+              @for (p of plans; track p) { <option [value]="p">{{ p }}</option> }
+            </select>
+            @if (error('plan'); as e) { <span id="mf-plan-err" class="mf-error">{{ e }}</span> }
+          </div>
+          <div class="field">
+            <label for="mf-start">Date de début <span class="req" aria-hidden="true">*</span></label>
+            <input id="mf-start" class="input-line" type="date" formControlName="subscriptionStartDate"
+                   [class.invalid]="error('subscriptionStartDate')"
+                   [attr.aria-invalid]="!!error('subscriptionStartDate')" aria-describedby="mf-start-msg" />
+            @if (error('subscriptionStartDate'); as e) {
+              <span id="mf-start-msg" class="mf-error">{{ e }}</span>
+            } @else if (expiryPreview(); as preview) {
+              <span id="mf-start-msg" class="mf-help">{{ preview }}</span>
+            }
+          </div>
+          <div class="field">
+            <label for="mf-coach">Coach référent</label>
+            <select id="mf-coach" class="input-line" formControlName="coach">
+              <option value="">Aucun pour l'instant</option>
+              @for (c of coaches; track c) { <option [value]="c">{{ c }}</option> }
+            </select>
+          </div>
+          <div class="mf-switch-row">
+            <div>
+              <div id="mf-auto-label" class="mf-switch-label">Reconduction automatique</div>
+              <div class="mf-help">{{ autoRenewText() }}</div>
+            </div>
+            <button type="button" class="switch" aria-labelledby="mf-auto-label"
+                    [attr.aria-pressed]="form.controls.autoRenew.value" (click)="toggleAutoRenew()">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Notes internes -->
+      <section class="mf-section mf-section--tight">
+        <h3 class="mf-section-title">Notes internes</h3>
+        <label for="mf-notes" class="mf-switch-label">Informations utiles pour l'équipe</label>
+        <textarea id="mf-notes" class="textarea-box" rows="3" maxlength="300" formControlName="notes"
+                  placeholder="Blessure, objectif, disponibilités…"></textarea>
+        <span class="mf-count">{{ notesCount() }}</span>
+      </section>
+    </div>
+
+    <!-- ===== PIED ===== -->
+    <footer class="mf-foot">
+      @if (isEdit()) {
+        <button type="button" class="mf-delete" [disabled]="saving()" (click)="askDelete()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6" />
+          </svg>
+          Supprimer l'adhérent
+        </button>
+      }
+      <span class="mf-spacer"></span>
+      <button type="button" class="btn btn-outline" [disabled]="saving()" (click)="close()">Annuler</button>
+      <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        {{ saving() ? 'Enregistrement…' : isEdit() ? 'Enregistrer les modifications' : 'Ajouter l’adhérent' }}
+      </button>
+    </footer>
+  </form>
+</div>
+
+@if (confirmingDelete()) {
+  <app-confirm-dialog
+    [title]="'Supprimer ' + (fullName() || 'cet adhérent') + ' ?'"
+    message="Son accès à la salle sera coupé immédiatement. L'historique des paiements reste disponible dans les exports. Cette action est définitive."
+    confirmLabel="Supprimer définitivement"
+    [busy]="deleting()"
+    (confirmed)="confirmDelete()"
+    (cancelled)="confirmingDelete.set(false)"
+  />
+}

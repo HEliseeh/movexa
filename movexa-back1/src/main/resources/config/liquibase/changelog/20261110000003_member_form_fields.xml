@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Champs demandés par le formulaire « Ajouter / Modifier un adhérent » -->
+
+    <changeSet id="20261110000003-1" author="elisee">
+        <addColumn tableName="app_user">
+            <column name="birth_date" type="date"/>
+        </addColumn>
+        <addColumn tableName="member">
+            <column name="subscription_start_date" type="date"/>
+            <column name="auto_renew" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <!-- Remplit les nouvelles colonnes pour les lignes déjà présentes, puis rend la date de début obligatoire -->
+    <changeSet id="20261110000003-2" author="elisee">
+        <sql>
+            UPDATE app_user
+               SET birth_date = (CURRENT_DATE - make_interval(years => age))::date
+             WHERE age IS NOT NULL AND birth_date IS NULL;
+
+            UPDATE member
+               SET subscription_start_date = CASE
+                     WHEN expiry_date IS NULL THEN join_date
+                     WHEN plan = 'Annuel' THEN (expiry_date - INTERVAL '12 months')::date
+                     WHEN plan = 'Trimestriel' THEN (expiry_date - INTERVAL '3 months')::date
+                     ELSE (expiry_date - INTERVAL '1 month')::date
+                   END
+             WHERE subscription_start_date IS NULL;
+        </sql>
+        <addNotNullConstraint tableName="member" columnName="subscription_start_date" columnDataType="date"/>
+    </changeSet>
+
+    <!-- Données fictives : un adhérent sur trois en reconduction automatique -->
+    <changeSet id="20261110000003-3-data" author="elisee" context="faker">
+        <sql>UPDATE member SET auto_renew = TRUE WHERE id &lt;= 50 AND id % 3 = 0;</sql>
+    </changeSet>
+</databaseChangeLog>

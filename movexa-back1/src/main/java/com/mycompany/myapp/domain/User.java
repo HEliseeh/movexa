@@ -6,13 +6,14 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
 import java.time.Instant;
+import java.time.LocalDate;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "user")
+@Table(name = "app_user")
 public class User implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -37,6 +38,9 @@ public class User implements Serializable {
     @Column(name = "age")
     private Integer age;
 
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
+
     @Column(name = "weight")
     private Double weight; // kg
 
@@ -56,8 +60,25 @@ public class User implements Serializable {
     @Column(name = "status", length = 20, nullable = false)
     private UserStatus status;
 
+    @Email
+    @Size(max = 254)
+    @Column(name = "email", length = 254, unique = true)
+    private String email;
+
+    @Size(max = 20)
+    @Column(name = "phone", length = 20)
+    private String phone;
+
     @Column(name = "date_of_creation", nullable = false, updatable = false)
     private Instant dateOfCreation;
+
+    /** Renseigne automatiquement la date de création au premier enregistrement. */
+    @PrePersist
+    void onCreate() {
+        if (dateOfCreation == null) {
+            dateOfCreation = Instant.now();
+        }
+    }
 
     @Override
     public boolean equals(Object o) {
