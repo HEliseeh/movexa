@@ -83,3 +83,39 @@
   .topbar-user,
   .topbar-version { display: none; }
 }
+
+/* ---- État de connexion (pointage hors ligne) ---- */
+.topbar-sync {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-full);
+  background: #23293d;
+  color: #e4e6ee;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+.topbar-sync-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #4fbf86;
+}
+
+.topbar-sync--off {
+  background: #f6dfc4;
+  color: var(--color-text);
+}
+
+.topbar-sync--off .topbar-sync-dot {
+  background: #b3591a;
+}
+
+@media (max-width: 640px) {
+  .topbar-sync {
+    display: none;
+  }
+}

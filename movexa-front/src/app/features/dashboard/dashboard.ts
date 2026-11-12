@@ -1,148 +1,176 @@
-import { Component, computed, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router, RouterLink } from '@angular/router';
+import { Dashboard as DashboardData, DueMember, PaymentMethod } from '@core/api/api.models';
+import { MovexaApi } from '@core/api/movexa-api.service';
 import { Fab, FabAction } from '@shared/fab/fab';
+import { apiError, fcfa, frDate, longToday, METHOD_LABELS, shortDate, whatsappLink } from '@shared/format';
 
-/** KPI affiché dans les cartes du haut */
-export interface KpiCard {
-  label: string;
-  value: string;
-  sub: string;
-}
+type Period = 'DAY' | 'WEEK' | 'MONTH';
 
-export type StatusTone = 'success' | 'warning' | 'danger' | 'neutral';
+const PERIODS: { id: Period; label: string; text: string }[] = [
+  { id: 'DAY', label: 'Aujourd’hui', text: 'aujourd’hui' },
+  { id: 'WEEK', label: 'Cette semaine', text: 'cette semaine' },
+  { id: 'MONTH', label: 'Ce mois-ci', text: 'ce mois-ci' },
+];
 
-/** Un adhérent à relancer */
-export interface Reminder {
-  id: number;
-  name: string;
-  reason: string;
-  tone: StatusTone;
-}
+/** Couleurs des moyens de paiement sur fond sombre (barre empilée et légende) */
+const METHOD_COLORS: Record<PaymentMethod, string> = {
+  CASH: '#ffffff',
+  MTN_MOMO: '#c8a47e',
+  MOOV_MONEY: '#8e9bb8',
+  PAYMENT_LINK: '#4a5470',
+};
 
-/** Un abonnement qui arrive à échéance */
-export interface Expiration {
-  name: string;
-  plan: string;
-  date: string;
-  status: string;
-  tone: StatusTone;
-  amount: string;
-}
+/** Hauteur du graphe de fréquentation, en pixels */
+const CHART_HEIGHT = 160;
 
-/** Une barre du graphe : nombre d'entrées sur une heure */
-interface HourPoint {
-  hour: number;
-  value: number;
-}
-
-type HourKind = 'past' | 'current' | 'average';
-
-/** Échelle du graphe : 60 entrées = 200 px */
-const CHART_MAX = 60;
-const CHART_HEIGHT = 200;
-
+/**
+ * Tableau de bord du gérant (module 5) : ce qui a été encaissé, qui est à jour, qui doit
+ * renouveler, et la fréquentation. Réservé au gérant (contrôlé aussi par le backend).
+ */
 @Component({
   selector: 'app-dashboard',
   imports: [Fab, RouterLink],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
-export class Dashboard {
-  readonly today = (() => {
-    const text = new Intl.DateTimeFormat('fr-FR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date());
-    return text.charAt(0).toUpperCase() + text.slice(1);
-  })();
+export class Dashboard implements OnInit {
+  private readonly api = inject(MovexaApi);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
-  // ---- Données mockées (à remplacer par de vrais appels API) ----
+  readonly today = longToday();
+  readonly periods = PERIODS;
+  readonly fcfa = fcfa;
+  readonly frDate = frDate;
 
-  readonly kpis: KpiCard[] = [
-    { label: 'Adhérents actifs', value: '412', sub: '18 nouveaux ce mois-ci' },
-    { label: "Présences aujourd'hui", value: '186', sub: '47 dans la salle maintenant' },
-    { label: 'Encaissé ce mois-ci', value: '3 480 000 FCFA', sub: 'Prévision du mois : 8 650 000 FCFA' },
-    { label: 'Impayés', value: '340 000 FCFA', sub: '12 adhérents concernés' },
-  ];
+  readonly period = signal<Period>('MONTH');
+  readonly data = signal<DashboardData | null>(null);
+  readonly error = signal<string | null>(null);
+  readonly hovered = signal<number | null>(null);
+  readonly sent = signal<Set<number>>(new Set());
+  private gymName = 'la salle';
 
-  /** Heure courante (les heures suivantes affichent la moyenne) */
-  readonly currentHour = 18;
+  readonly periodText = computed(() => PERIODS.find(p => p.id === this.period())!.text);
 
-  private readonly hours: HourPoint[] = [
-    [6, 14], [7, 28], [8, 36], [9, 31], [10, 22], [11, 18], [12, 33], [13, 29], [14, 15],
-    [15, 17], [16, 24], [17, 41], [18, 52], [19, 48], [20, 39], [21, 24], [22, 9],
-  ].map(([hour, value]) => ({ hour, value }));
-
-  readonly gridLines = [0, 20, 40, 60].map(value => ({ value, px: this.scale(value) }));
-
-  readonly bars = this.hours.map(p => {
-    const kind = this.kindOf(p.hour);
-    return {
-      ...p,
-      kind,
-      px: this.scale(p.value),
-      tick: p.hour % 2 === 0 ? `${p.hour} h` : '',
-      aria: `${p.hour} h : ${p.value} ${kind === 'average' ? 'entrées en moyenne' : 'entrées'}`,
-    };
+  readonly methods = computed(() => {
+    const d = this.data();
+    if (!d) return [];
+    return (Object.keys(METHOD_LABELS) as PaymentMethod[]).map(m => {
+      const value = d.paidByMethod[m] ?? 0;
+      return { label: METHOD_LABELS[m], value, color: METHOD_COLORS[m], pct: d.totalPaid ? (value / d.totalPaid) * 100 : 0 };
+    });
   });
 
-  /** Heure survolée dans le graphe (null = heure courante) */
-  readonly hoveredHour = signal<number | null>(null);
-
-  readonly chartReadout = computed(() => {
-    const hour = this.hoveredHour() ?? this.currentHour;
-    const point = this.hours.find(p => p.hour === hour) ?? this.hours[0];
-    const kind = this.kindOf(point.hour);
-    const suffix =
-      kind === 'past' ? 'entrées' : kind === 'current' ? 'entrées, heure en cours' : 'entrées en moyenne';
-    return `${point.hour} h : ${point.value} ${suffix}`;
+  readonly kpis = computed(() => {
+    const d = this.data();
+    if (!d) return [];
+    return [
+      { label: 'Membres actifs', value: String(d.activeMembers), sub: 'à jour aujourd’hui' },
+      { label: 'Nouveaux inscrits', value: String(d.newMembers), sub: this.periodText() },
+      { label: 'Expirés', value: String(d.expiredMembers), sub: 'non renouvelés à ce jour' },
+      { label: 'Renouvelés après relance', value: `${d.renewedAfterReminderWeek} / ${d.remindersSentWeek}`, sub: 'relances des 7 derniers jours' },
+    ];
   });
 
-  readonly reminders: Reminder[] = [
-    { id: 1, name: 'Camille Roux', reason: 'Impayé : 30 000 FCFA depuis 6 jours', tone: 'danger' },
-    { id: 2, name: 'Yacine Haddad', reason: 'Abonnement expiré le 7 nov.', tone: 'danger' },
-    { id: 3, name: 'Inès Benali', reason: 'Expire dans 2 jours', tone: 'warning' },
-    { id: 4, name: 'Mamadou Sow', reason: 'Absent depuis 21 jours', tone: 'warning' },
-  ];
+  /** Échelle du graphe : arrondie à la dizaine supérieure */
+  private readonly chartMax = computed(() => {
+    const max = Math.max(10, ...(this.data()?.attendance.map(a => a.count) ?? [0]));
+    return Math.ceil(max / 10) * 10;
+  });
 
-  /** Relances déjà envoyées (par id) */
-  readonly sent = signal<ReadonlySet<number>>(new Set());
+  readonly gridLines = computed(() => {
+    const max = this.chartMax();
+    return [0, max / 2, max].map(v => ({ value: v, px: (v / max) * CHART_HEIGHT }));
+  });
 
-  readonly expirations: Expiration[] = [
-    { name: 'Inès Benali', plan: 'Mensuel Illimité', date: '11/11/2026', status: 'Expire bientôt', tone: 'warning', amount: '30 000 FCFA' },
-    { name: 'Julien Petit', plan: 'Mensuel Essentiel', date: '12/11/2026', status: 'Expire bientôt', tone: 'warning', amount: '20 000 FCFA' },
-    { name: 'Awa Diallo', plan: 'Trimestriel', date: '14/11/2026', status: 'Renouvellement auto', tone: 'success', amount: '75 000 FCFA' },
-    { name: 'Koffi Mensah', plan: 'Mensuel Illimité', date: '15/11/2026', status: 'Expire bientôt', tone: 'warning', amount: '30 000 FCFA' },
-  ];
+  readonly days = computed(() => {
+    const list = this.data()?.attendance ?? [];
+    const max = this.chartMax();
+    return list.map((a, i) => {
+      const date = new Date(a.day + 'T12:00:00');
+      const label = date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' });
+      return {
+        label,
+        tick: i % 2 === 1 ? label : '',
+        px: (a.count / max) * CHART_HEIGHT,
+        current: i === list.length - 1,
+        count: a.count,
+        aria: `${label} : ${a.count} entrées`,
+      };
+    });
+  });
 
-  // ---- Actions du FAB spécifiques à cet écran ----
+  readonly readout = computed(() => {
+    const days = this.days();
+    if (!days.length) return '';
+    const i = this.hovered() ?? days.length - 1;
+    const d = days[i];
+    return `${d.label} : ${d.count} entrées${d.current ? ', journée en cours' : ''}`;
+  });
+
   readonly fabActions: FabAction[] = [
-    { id: 'add-member', label: 'Ajouter un adhérent', iconPath: 'M12 5v14M5 12h14' },
-    { id: 'add-payment', label: 'Enregistrer un paiement', iconPath: 'M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2M2 10h20' },
-    { id: 'send-reminders', label: 'Envoyer les relances', iconPath: 'M22 2L11 13M22 2l-7 20-4-9-9-4z' },
-    { id: 'export', label: 'Exporter les données', iconPath: 'M12 3v12M7 10l5 5 5-5M4 21h16' },
+    { id: 'member', label: 'Nouveau membre', iconPath: 'M12 5v14M5 12h14' },
+    { id: 'pay', label: 'Encaisser', iconPath: 'M2 7h20v12H2zM2 11h20M6 15h4' },
+    { id: 'checkin', label: 'Pointer une entrée', iconPath: 'M3 8V4h5M16 3h5v5M21 16v5h-5M8 21H3v-5' },
+    { id: 'reminders', label: 'Faire les relances', iconPath: 'M22 2L11 13M22 2l-7 20-4-9-9-4z' },
   ];
 
-  sendReminder(id: number): void {
-    this.sent.update(s => new Set(s).add(id));
-    // TODO: appel API de relance
+  ngOnInit(): void {
+    this.load();
+    this.api.settings().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(s => (this.gymName = s.name ?? 'la salle'));
+  }
+
+  setPeriod(p: Period): void {
+    this.period.set(p);
+    this.load();
+  }
+
+  load(): void {
+    this.api
+      .dashboard(this.period())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: d => {
+          this.data.set(d);
+          this.error.set(null);
+        },
+        error: err => this.error.set(apiError(err, 'Impossible de charger le tableau de bord.')),
+      });
+  }
+
+  dueDetail(d: DueMember, expired: boolean): string {
+    const m = d.member;
+    const plan = m.planName ?? 'Sans formule';
+    if (!expired) {
+      const when = m.daysLeft === 0 ? 'expire aujourd’hui' : m.daysLeft === 1 ? `expire demain, ${shortDate(m.endDate)}` : `expire le ${shortDate(m.endDate)}`;
+      return `${plan} · ${when}`;
+    }
+    const n = d.reminderCount;
+    return `${plan} · expiré le ${shortDate(m.endDate)} · ${n === 0 ? 'aucune relance' : `relancé ${n} fois`}`;
+  }
+
+  /** Relance WhatsApp immédiate depuis la liste « À renouveler », enregistrée côté serveur */
+  remind(d: DueMember): void {
+    const m = d.member;
+    const when = m.daysLeft === 0 ? 'aujourd’hui' : m.daysLeft === 1 ? 'demain' : `le ${shortDate(m.endDate)}`;
+    const message = `Bonjour ${m.firstName}, votre abonnement ${m.planName ?? ''} à ${this.gymName} se termine ${when}. Renouvelez à l’accueil ou par MoMo. À bientôt !`;
+    window.open(whatsappLink(m.phone, message), '_blank', 'noopener');
+    this.api
+      .reminderSent({ memberId: m.id, rule: (m.daysLeft ?? 9) <= 1 ? 'BEFORE_1' : 'BEFORE_7', channel: 'WHATSAPP', targetEndDate: m.endDate, message })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.sent.update(s => new Set(s).add(m.id)));
   }
 
   onFabAction(action: FabAction): void {
-    console.log('Action déclenchée :', action.id);
-    // À brancher sur les services quand les features seront prêtes
-  }
-
-  private scale(value: number): number {
-    return Math.round((value / CHART_MAX) * CHART_HEIGHT);
-  }
-
-  private kindOf(hour: number): HourKind {
-    if (hour < this.currentHour) return 'past';
-    return hour === this.currentHour ? 'current' : 'average';
+    const routes: Record<string, [string, object?]> = {
+      member: ['/members', { new: 1 }],
+      pay: ['/payments', { pay: 1 }],
+      checkin: ['/access'],
+      reminders: ['/reminders'],
+    };
+    const [path, queryParams] = routes[action.id];
+    this.router.navigate([path], { queryParams });
   }
 }

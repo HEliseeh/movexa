@@ -10,11 +10,11 @@
 }
 
 .members-grid {
-  min-width: 1040px;
+  min-width: 1000px;
 }
 
 .members-grid .grid-row {
-  grid-template-columns: 28px 90px 1.6fr 1.3fr 1.2fr 1fr 1fr 1fr;
+  grid-template-columns: 28px 1.8fr 1.1fr 1.2fr 1.1fr 1fr 1fr 1fr;
 }
 
 .member-row {
@@ -87,4 +87,17 @@
   margin: 0;
   padding: var(--space-6) var(--space-5);
   color: var(--color-text-muted);
+}
+
+.member-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+
+.member-name:hover {
+  text-decoration: underline;
 }

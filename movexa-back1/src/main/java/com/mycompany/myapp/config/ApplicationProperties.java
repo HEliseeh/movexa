@@ -13,10 +13,35 @@ public class ApplicationProperties {
 
     private final Liquibase liquibase = new Liquibase();
 
+    private final Payment payment = new Payment();
+
     // jhipster-needle-application-properties-property
 
     public Liquibase getLiquibase() {
         return liquibase;
+    }
+
+    public Payment getPayment() {
+        return payment;
+    }
+
+    /** Paiement en ligne (KKiaPay / FedaPay). */
+    public static class Payment {
+
+        /**
+         * Clé partagée avec l'agrégateur pour signer les webhooks (HMAC-SHA256).
+         * Vide = webhook refusé. À fournir par variable d'environnement, jamais dans Git :
+         * APPLICATION_PAYMENT_WEBHOOK_SECRET
+         */
+        private String webhookSecret = "";
+
+        public String getWebhookSecret() {
+            return webhookSecret;
+        }
+
+        public void setWebhookSecret(String webhookSecret) {
+            this.webhookSecret = webhookSecret;
+        }
     }
 
     // jhipster-needle-application-properties-property-getter

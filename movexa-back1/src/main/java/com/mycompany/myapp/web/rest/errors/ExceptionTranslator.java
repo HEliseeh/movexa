@@ -101,8 +101,15 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         // higher precedence to Custom/ResponseStatus types
         String title = extractTitle(err, problem.getStatus());
         String problemTitle = problem.getTitle();
-        if (problemTitle == null || !problemTitle.equals(title)) {
+        if (err instanceof BadRequestAlertException && problemTitle != null) {
+            // Erreur métier : le message lisible (« Ce numéro appartient déjà à… ») est gardé tel quel
+            problem.setDetail(problemTitle);
+        } else if (problemTitle == null || !problemTitle.equals(title)) {
             problem.setTitle(title);
+        }
+        if (err instanceof org.springframework.web.server.ResponseStatusException rse && rse.getReason() != null) {
+            // NotFoundException et consorts : la raison donnée par le service, sans le préfixe « 404 NOT_FOUND »
+            problem.setDetail(rse.getReason());
         }
 
         if (problem.getDetail() == null) {

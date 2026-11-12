@@ -1,0 +1,78 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Relances</h1>
+      <p class="page-subtitle">Rappels avant et après la fin d’abonnement. Envoi depuis le téléphone de la salle, par WhatsApp ou SMS.</p>
+    </div>
+  </header>
+
+  @if (stats(); as s) {
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-label">Relances envoyées</div><div class="kpi-value">{{ s.sent }}</div><div class="kpi-sub">7 derniers jours, {{ s.sms }} SMS et {{ s.whatsapp }} WhatsApp</div></div>
+      <div class="kpi"><div class="kpi-label">Renouvellements obtenus</div><div class="kpi-value">{{ s.renewed }}</div><div class="kpi-sub">{{ s.sent ? ((s.renewed / s.sent) * 100 | number: '1.0-0') + ' % des relances' : 'aucune relance' }}</div></div>
+      <div class="kpi"><div class="kpi-label">Montant récupéré</div><div class="kpi-value">{{ fcfa(s.recoveredAmount) }}</div><div class="kpi-sub">grâce aux relances, 7 derniers jours</div></div>
+      <div class="kpi"><div class="kpi-label">À envoyer aujourd’hui</div><div class="kpi-value">{{ queue().length }}</div><div class="kpi-sub">messages à ouvrir</div></div>
+    </div>
+  }
+
+  <div class="tabs" role="tablist" aria-label="Vues">
+    <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'queue'" (click)="tab.set('queue')">Aujourd’hui</button>
+    <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'history'" (click)="tab.set('history')">Historique et résultats</button>
+  </div>
+
+  @if (tab() === 'queue') {
+    <div class="rm-columns">
+      <section class="card card--flush rm-list">
+        @for (q of queue(); track q.memberId) {
+          <button type="button" class="rm-row" [attr.aria-pressed]="q.memberId === selectedId()" (click)="select(q)">
+            <span class="status-dot" [class.status-dot--warning]="!q.expired" [class.status-dot--danger]="q.expired"></span>
+            <span class="rm-row-main">
+              <span class="text-strong">{{ q.memberName }}</span>
+              <span class="follow-detail">{{ ruleLabels[q.rule] }} · fin {{ q.expired ? 'le' : 'prévue le' }} {{ frDate(q.targetEndDate) }} · {{ q.channel === 'WHATSAPP' ? 'WhatsApp' : 'SMS' }}</span>
+            </span>
+            <span class="rm-amount">{{ fcfa(q.amount) }}</span>
+          </button>
+        } @empty {
+          <p class="empty">Aucune relance à faire aujourd’hui.</p>
+        }
+      </section>
+
+      <aside class="card rm-preview">
+        @if (selected(); as q) {
+          <h2 class="card-title">{{ q.memberName }}</h2>
+          <p class="help">{{ q.phone }} · {{ q.planName ?? 'Sans formule' }} · {{ ruleLabels[q.rule] }}</p>
+          <label for="rm-msg" class="field-label">Message (modifiable)</label>
+          <textarea id="rm-msg" class="textarea-box rm-msg" rows="6" maxlength="600" [ngModel]="message()" (ngModelChange)="message.set($event)"></textarea>
+          <div class="rm-actions">
+            <button type="button" class="btn btn-primary" (click)="send(q, 'WHATSAPP')">Ouvrir WhatsApp</button>
+            <button type="button" class="btn btn-outline" (click)="send(q, 'SMS')">Envoyer par SMS</button>
+            <a class="btn btn-outline" [routerLink]="['/members', q.memberId]">Fiche</a>
+          </div>
+          <p class="help">Le message s’ouvre sur le téléphone, prêt à envoyer. La relance est enregistrée pour mesurer si le membre renouvelle.</p>
+        } @else {
+          <p class="empty">Sélectionnez une relance pour voir le message.</p>
+        }
+      </aside>
+    </div>
+  } @else {
+    <section class="card card--flush">
+      <div class="grid-scroll">
+        <div class="rm-history">
+          <div class="grid-row grid-row--head"><span>Date</span><span>Membre</span><span>Règle</span><span>Canal</span><span>Envoyé par</span><span>Résultat</span></div>
+          @for (r of history(); track r.id) {
+            <div class="grid-row">
+              <span>{{ dayHour(r.sentAt) }}</span>
+              <a class="text-strong rm-name" [routerLink]="['/members', r.memberId]">{{ r.memberName }}</a>
+              <span>{{ ruleLabels[r.rule] }}</span>
+              <span>{{ r.channel === 'WHATSAPP' ? 'WhatsApp' : 'SMS' }}</span>
+              <span>{{ r.sentBy }}</span>
+              <span class="status"><span class="status-dot" [class]="'status-dot status-dot--' + outcomeTone(r)"></span>{{ r.outcomeText }}</span>
+            </div>
+          } @empty {
+            <p class="empty">Aucune relance ces 30 derniers jours.</p>
+          }
+        </div>
+      </div>
+    </section>
+  }
+</div>

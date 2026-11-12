@@ -1,9 +1,14 @@
 package com.mycompany.myapp.web.rest;
 
-import com.mycompany.myapp.domain.enumeration.MemberStatus;
+import com.mycompany.myapp.service.MemberImportService;
 import com.mycompany.myapp.service.MemberService;
 import com.mycompany.myapp.service.dto.MemberDTO;
+import com.mycompany.myapp.service.dto.MemberDtos.ImportRequest;
+import com.mycompany.myapp.service.dto.MemberDtos.ImportResult;
+import com.mycompany.myapp.service.dto.MemberDtos.MemberLiteDTO;
+import com.mycompany.myapp.service.dto.MemberDtos.MemberOverviewDTO;
 import com.mycompany.myapp.web.rest.errors.BadRequestAlertException;
+import com.mycompany.myapp.web.rest.errors.NotFoundException;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -37,29 +42,54 @@ public class MemberResource {
     private String applicationName;
 
     private final MemberService memberService;
+    private final MemberImportService importService;
 
-    public MemberResource(MemberService memberService) {
+    public MemberResource(MemberService memberService, MemberImportService importService) {
         this.memberService = memberService;
+        this.importService = importService;
     }
 
     /**
-     * GET /api/members?page=0&size=20&sort=id,asc&status=ACTIVE
+     * GET /api/members?page=0&size=20&sort=id,asc
      * Le nombre total d'éléments est renvoyé dans l'en-tête X-Total-Count.
      */
     @GetMapping("")
     public ResponseEntity<List<MemberDTO>> getAllMembers(
-        @RequestParam(required = false) MemberStatus status,
         @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.ASC) Pageable pageable
     ) {
-        LOG.debug("REST : liste des membres, status={}, {}", status, pageable);
-        Page<MemberDTO> page = memberService.findAll(status, pageable);
+        LOG.debug("REST : liste des membres, {}", pageable);
+        Page<MemberDTO> page = memberService.findAll(pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
+    }
+
+    /** GET /api/members/search?q=awa : recherche instantanée (nom, numéro, téléphone). */
+    @GetMapping("/search")
+    public List<MemberLiteDTO> search(@RequestParam("q") String q, @RequestParam(defaultValue = "8") int limit) {
+        return memberService.search(q, limit);
+    }
+
+    /** GET /api/members/lite : tous les membres en version légère (cache du pointage hors ligne). */
+    @GetMapping("/lite")
+    public List<MemberLiteDTO> lite() {
+        return memberService.findAllLite();
+    }
+
+    /** GET /api/members/by-qr/{token} : membre correspondant à un QR code scanné. */
+    @GetMapping("/by-qr/{token}")
+    public MemberLiteDTO byQr(@PathVariable String token) {
+        return memberService.findByQr(token).orElseThrow(() -> new NotFoundException("QR code inconnu"));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<MemberDTO> getMember(@PathVariable Long id) {
         return ResponseUtil.wrapOrNotFound(memberService.findOne(id));
+    }
+
+    /** GET /api/members/{id}/overview : tout le contenu de la fiche membre. */
+    @GetMapping("/{id}/overview")
+    public ResponseEntity<MemberOverviewDTO> overview(@PathVariable Long id) {
+        return ResponseUtil.wrapOrNotFound(memberService.overview(id));
     }
 
     @PostMapping("")
@@ -73,6 +103,12 @@ public class MemberResource {
             .body(result);
     }
 
+    /** POST /api/members/import : vérifie (dryRun = true) ou importe une liste lue dans un fichier CSV. */
+    @PostMapping("/import")
+    public ImportResult importMembers(@Valid @RequestBody ImportRequest request) {
+        return importService.importMembers(request);
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<MemberDTO> updateMember(@PathVariable Long id, @Valid @RequestBody MemberDTO dto) {
         if (dto.getId() != null && !dto.getId().equals(id)) {
@@ -84,9 +120,10 @@ public class MemberResource {
         );
     }
 
+    /** DELETE /api/members/{id} : archive le membre (son historique est conservé). */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteMember(@PathVariable Long id) {
-        if (!memberService.delete(id)) {
+        if (!memberService.archive(id)) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.noContent()

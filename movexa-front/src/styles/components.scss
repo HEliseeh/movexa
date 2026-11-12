@@ -1,0 +1,330 @@
+/* ============================================================
+   Composants partagés ajoutés pour le MVP :
+   pop-up (3 tailles de la maquette), choix en pastilles, alertes,
+   avatars, cartes KPI, listes de suivi.
+   ============================================================ */
+
+/* ---- Pop-up : fond + boîte. Tailles S (440), M (560), L (760) ---- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  padding: var(--space-6) var(--space-4);
+  background: rgb(22 26 41 / 0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: min(900px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-radius: 8px;
+  box-shadow: 0 16px 40px rgb(22 26 41 / 0.4);
+  overflow: hidden;
+}
+
+.modal--s { max-width: 440px; }
+.modal--l { max-width: 760px; }
+
+.modal-head {
+  padding: var(--space-5) var(--space-5) 16px var(--space-6);
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-head-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 21px;
+  line-height: 28px;
+  font-weight: var(--font-weight-black);
+}
+
+.modal-subtitle {
+  margin: 2px 0 0;
+  font-size: var(--font-size-sm);
+  line-height: 20px;
+  color: var(--color-text-soft);
+}
+
+.modal-close {
+  width: var(--touch-target);
+  height: var(--touch-target);
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  &:hover { background: var(--color-surface-raised); }
+}
+
+.modal-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 20px var(--space-6) 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.modal-foot {
+  padding: 14px var(--space-6);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+}
+
+@media (max-width: 600px) {
+  .modal-backdrop { padding: 0; align-items: stretch; }
+  .modal { max-height: 100vh; border-radius: 0; }
+}
+
+/* ---- Choix en pastilles (moyen de paiement, onglets compacts) ---- */
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.choice {
+  min-height: var(--touch-target);
+  padding: 0 14px;
+  border: 1px solid var(--color-text);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+
+  &[aria-pressed='true'] {
+    background: var(--color-text);
+    color: var(--color-on-dark);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+/* Sélecteur segmenté (jour / semaine / mois) */
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 6px;
+  background: var(--color-surface);
+
+  button {
+    min-height: 40px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    cursor: pointer;
+
+    &[aria-selected='true'],
+    &[aria-pressed='true'] {
+      background: var(--color-text);
+      color: var(--color-on-dark);
+    }
+  }
+}
+
+/* ---- Alertes ---- */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: var(--space-3) 14px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
+  line-height: 22px;
+  background: var(--color-info-bg);
+
+  &--error {
+    border: 1px solid var(--color-danger-strong);
+    background: #fbeceb;
+    color: #8f2a23;
+    font-weight: var(--font-weight-bold);
+  }
+
+  &--warning {
+    background: #fbeadb;
+    color: #6b3a0c;
+  }
+
+  &--success {
+    background: #e2f1e8;
+    color: #14532d;
+  }
+}
+
+.help {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-text-soft);
+}
+
+.error-text {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-danger-strong);
+}
+
+/* ---- Avatar à initiales ---- */
+.avatar {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-dark-panel);
+  color: var(--color-on-dark);
+  font-size: 12px;
+  font-weight: var(--font-weight-black);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &--light {
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  &--lg {
+    width: 64px;
+    height: 64px;
+    font-size: 22px;
+  }
+}
+
+/* ---- Cartes KPI ---- */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--space-4);
+}
+
+.kpi {
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kpi-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.kpi-value {
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: var(--font-weight-black);
+}
+
+.kpi-sub {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-text-muted);
+}
+
+/* ---- Listes de suivi (à renouveler, prospects…) ---- */
+.follow-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px var(--space-5);
+
+  &:nth-of-type(even) { background: var(--color-surface-stripe); }
+}
+
+.follow-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.follow-name {
+  display: block;
+  font-size: var(--font-size-base);
+  line-height: 20px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.follow-detail {
+  font-size: var(--font-size-sm);
+  line-height: 20px;
+  color: var(--color-text-soft);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-5);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* Barre de progression (chance d'adhésion, période d'abonnement) */
+.bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-border-soft);
+  overflow: hidden;
+
+  > span {
+    display: block;
+    height: 100%;
+    background: var(--color-text);
+  }
+}
+
+.link-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-link);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Impression (reçu) : seul le contenu marqué .print-area est imprimé */
+@media print {
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: absolute; inset: 0 auto auto 0; width: 100%; }
+}

@@ -1,136 +1,121 @@
 <div class="page">
-
-  <header class="page-header">
-    <div>
-      <h1 class="page-title">Accueil</h1>
-      <p class="page-subtitle">Inscrire, encaisser et remettre un reçu au comptoir.</p>
-    </div>
-    <div class="page-actions">
-      <a routerLink="/members" class="btn btn-primary">Nouvelle inscription</a>
-      <a routerLink="/access" class="btn btn-outline">Ouvrir le contrôle d'accès</a>
-    </div>
+  <header>
+    <h1 class="page-title">Bonjour {{ firstName() }}</h1>
+    <p class="page-subtitle">
+      {{ today }}
+      @if (data(); as d) { · {{ d.entriesToday }} entrées et {{ d.paymentsToday }} paiements enregistrés aujourd’hui }
+    </p>
   </header>
 
-  <div class="reception-row">
-
-    <!-- ===== Encaissement ===== -->
-    <section class="card checkout">
-      <h2 class="card-title">Encaisser un paiement</h2>
-
-      <div class="field">
-        <label for="acc-search">Adhérent</label>
-        <input
-          id="acc-search"
-          class="input-line"
-          type="search"
-          autocomplete="off"
-          placeholder="Nom ou numéro d'adhérent"
-          [ngModel]="query()"
-          (ngModelChange)="query.set($event)"
-        />
-      </div>
-
-      <div class="hits" role="listbox" aria-label="Adhérents trouvés">
-        @for (m of results(); track m.id) {
-          <button
-            type="button"
-            role="option"
-            class="hit"
-            [class.hit--selected]="m.id === selectedId()"
-            [attr.aria-selected]="m.id === selectedId()"
-            (click)="selectedId.set(m.id)"
-          >
-            <span class="status-dot" [class]="'status-dot status-dot--' + m.tone"></span>
-            <span class="hit-info">
-              <span class="hit-name">{{ m.name }}</span>
-              <span class="hit-meta">{{ m.status }} · {{ m.plan }}</span>
-            </span>
-            <span class="hit-meta">{{ m.id }}</span>
-          </button>
-        } @empty {
-          <p class="hit-meta">Aucun adhérent trouvé.</p>
+  <!-- ===== RECHERCHE ===== -->
+  <section class="card rc-search">
+    <label for="rc-q" class="text-strong">Rechercher un membre ou un prospect</label>
+    <input id="rc-q" class="input-line rc-input" type="search" autocomplete="off" placeholder="Nom ou numéro de téléphone"
+           [ngModel]="query()" (ngModelChange)="query.set($event)" />
+    @if (hasQuery()) {
+      <div class="rc-results" aria-live="polite">
+        @for (m of memberResults(); track m.id) {
+          <div class="rc-result">
+            <span class="avatar" aria-hidden="true">{{ initials(m.firstName, m.lastName) }}</span>
+            <div class="follow-main">
+              <div class="text-strong">{{ m.firstName }} {{ m.lastName }}</div>
+              <div class="follow-detail"><span class="status-dot" [class]="'status-dot status-dot--' + tones[m.state]"></span> {{ m.phone }} · {{ stateText(m.state, m.endDate, m.daysLeft) }}</div>
+            </div>
+            <div class="rc-actions">
+              <button type="button" class="btn btn-primary btn-sm" (click)="checkIn(m)">Pointer</button>
+              <button type="button" class="btn btn-outline btn-sm" (click)="paying.set(m)">Encaisser</button>
+              <a class="btn btn-outline btn-sm" [routerLink]="['/members', m.id]">Fiche</a>
+            </div>
+          </div>
+        }
+        @for (p of prospectResults(); track p.id) {
+          <div class="rc-result">
+            <span class="avatar avatar--light" aria-hidden="true">{{ initials(p.name ?? '?') }}</span>
+            <div class="follow-main">
+              <div class="text-strong">{{ p.name ?? 'Prospect sans nom' }}</div>
+              <div class="follow-detail">{{ p.phone }} · Prospect · chance {{ p.score }} %</div>
+            </div>
+            <div class="rc-actions">
+              <button type="button" class="btn btn-primary btn-sm" (click)="convert(p)">Convertir en membre</button>
+            </div>
+          </div>
+        }
+        @if (memberResults().length === 0 && prospectResults().length === 0) {
+          <p class="help">Personne trouvé. <button type="button" class="link-btn" (click)="creating.set(true)">Inscrire un nouveau membre</button> ou <a routerLink="/prospects" [queryParams]="{ phone: query() }">ajouter un prospect</a>.</p>
         }
       </div>
+    }
+  </section>
 
-      <div class="field">
-        <label for="acc-produit">Produit</label>
-        <select id="acc-produit" class="input-line" [ngModel]="productId()" (ngModelChange)="productId.set($event)">
-          @for (p of products; track p.id) {
-            <option [value]="p.id">{{ p.label }}, {{ fcfa(p.price) }}</option>
-          }
-        </select>
-      </div>
-
-      <fieldset class="field modes">
-        <legend>Moyen de paiement</legend>
-        <div class="mode-buttons">
-          @for (o of modes; track o.id) {
-            <button
-              type="button"
-              class="mode-btn"
-              [attr.aria-pressed]="o.id === mode()"
-              (click)="mode.set(o.id)"
-            >{{ o.label }}</button>
-          }
-        </div>
-      </fieldset>
-
-      @if (mode() === 'momo') {
-        <div class="field">
-          <label for="acc-momo">Numéro Mobile Money</label>
-          <input
-            id="acc-momo"
-            class="input-line"
-            type="tel"
-            placeholder="Numéro de l'adhérent"
-            [ngModel]="momoNumber()"
-            (ngModelChange)="momoNumber.set($event)"
-          />
-        </div>
-      }
-
-      <div class="checkout-total">
-        <span>Total à encaisser</span>
-        <span class="checkout-amount">{{ fcfa(product().price) }}</span>
-      </div>
-
-      <button type="button" class="btn btn-primary btn-lg" (click)="collect()">Encaisser et générer le reçu</button>
-
-      @if (confirmation()) {
-        <div class="confirmation" role="status">
-          <span>{{ confirmation() }}</span>
-          <a href="#" (click)="$event.preventDefault()">Télécharger le PDF</a>
-        </div>
-      }
-    </section>
-
-    <!-- ===== Encaissements du jour ===== -->
-    <section class="card card--flush today">
-      <div class="card-head">
-        <h2 class="card-title">Encaissements du jour</h2>
-        <span class="text-strong">Total : {{ fcfa(total()) }}</span>
-      </div>
-      <div class="grid-scroll">
-        <div class="today-grid">
-          <div class="grid-row grid-row--head">
-            <span>Heure</span><span>Adhérent</span><span>Moyen</span>
-            <span class="text-right">Montant</span><span class="text-right">Reçu</span>
-          </div>
-          <div>
-            @for (c of collections(); track $index) {
-              <div class="grid-row grid-row--roomy">
-                <span>{{ c.time }}</span>
-                <span>{{ c.name }}</span>
-                <span>{{ c.mode }}</span>
-                <span class="text-right nowrap">{{ fcfa(c.price) }}</span>
-                <a href="#" class="text-right text-strong" (click)="$event.preventDefault()">PDF</a>
-              </div>
-            }
-          </div>
-        </div>
-      </div>
-      <div class="card-foot">{{ collections().length }} encaissements aujourd'hui</div>
-    </section>
-
+  <!-- ===== RACCOURCIS ===== -->
+  <div class="rc-tiles">
+    <a routerLink="/access" class="rc-tile rc-tile--dark">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V4h5M16 3h5v5M21 16v5h-5M8 21H3v-5M8 8h3v3H8zM14 8h2v2h-2zM8 14h2v2H8zM13 13h3v3h-3z" /></svg>
+      <span class="rc-tile-label">Pointer une entrée</span><span class="rc-tile-sub">Scanner le QR ou chercher</span>
+    </a>
+    <button type="button" class="rc-tile rc-tile--sand" (click)="creating.set(true)">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6M22 11h-6" /></svg>
+      <span class="rc-tile-label">Nouveau membre</span><span class="rc-tile-sub">Inscription en moins de 30 s</span>
+    </button>
+    <button type="button" class="rc-tile" (click)="paying.set(null)">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h20v12H2zM2 11h20M6 15h4" /></svg>
+      <span class="rc-tile-label">Encaisser</span><span class="rc-tile-sub">Espèces, MoMo, Moov ou lien</span>
+    </button>
+    <a routerLink="/prospects" [queryParams]="{ new: 1 }" class="rc-tile">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6M22 11h-6" /></svg>
+      <span class="rc-tile-label">Nouveau prospect</span><span class="rc-tile-sub">Téléphone et source suffisent</span>
+    </a>
   </div>
+
+  <!-- ===== À TRAITER ===== -->
+  @if (data(); as d) {
+    <div class="rc-lists">
+      <section class="card card--flush rc-list">
+        <div class="card-head rc-list-head">
+          <h2 class="card-title">Venus aujourd’hui, à renouveler</h2>
+          <p class="help">Le bon moment pour proposer le renouvellement : ils sont dans la salle.</p>
+        </div>
+        @for (m of d.visitedToRenew; track m.id) {
+          <div class="follow-row">
+            <span class="status-dot" [class]="'status-dot status-dot--' + tones[m.state]"></span>
+            <div class="follow-main">
+              <a class="follow-name" [routerLink]="['/members', m.id]">{{ m.firstName }} {{ m.lastName }}</a>
+              <div class="follow-detail">{{ m.planName ?? 'Sans formule' }} · {{ stateText(m.state, m.endDate, m.daysLeft) }}</div>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" (click)="paying.set(m)">Renouveler</button>
+          </div>
+        } @empty {
+          <p class="empty">Personne à relancer parmi les passages du jour.</p>
+        }
+      </section>
+
+      <section class="card card--flush rc-list">
+        <div class="card-head">
+          <h2 class="card-title">Prospects à relancer aujourd’hui</h2>
+          <a routerLink="/prospects" class="text-strong">Tout voir</a>
+        </div>
+        @for (p of d.prospectsToFollow; track p.id) {
+          <div class="follow-row">
+            <span class="rc-score" [class.rc-score--low]="p.lastChance">{{ p.score }} %</span>
+            <div class="follow-main">
+              <div class="text-strong">{{ p.name ?? 'Sans nom' }}</div>
+              <div class="follow-detail">{{ sourceLabels[p.source] }} · {{ p.lastChance ? 'dernière chance avant suppression' : 'relance prévue' }}</div>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" [class.is-done]="sent().has(p.id)" [disabled]="sent().has(p.id)" (click)="followUp(p)">
+              {{ sent().has(p.id) ? 'Envoyé' : 'WhatsApp' }}
+            </button>
+          </div>
+        } @empty {
+          <p class="empty">Aucun prospect à relancer aujourd’hui.</p>
+        }
+      </section>
+    </div>
+  }
 </div>
+
+@if (paying() !== undefined) {
+  <app-pay-dialog [member]="paying() ?? null" [title]="paying() ? 'Renouveler l’abonnement' : 'Encaisser'" (paid)="onPaid($event)" (closed)="paying.set(undefined)" />
+}
+@if (creating()) {
+  <app-member-form (saved)="onCreated()" (closed)="creating.set(false)" />
+}

@@ -1,0 +1,145 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Prospects</h1>
+      <p class="page-subtitle">Personnes intéressées, pas encore membres. Chance d’adhésion de 0 à 100 %.</p>
+    </div>
+  </header>
+
+  <!-- ===== AJOUT RAPIDE ===== -->
+  <form class="card ps-add" (ngSubmit)="add()">
+    <div class="field">
+      <label for="ps-tel">Téléphone *</label>
+      <input #phoneInput id="ps-tel" name="tel" class="input-line" type="tel" inputmode="tel" autocomplete="off" [ngModel]="newPhone()" (ngModelChange)="newPhone.set($event); addMessage.set(null)" />
+    </div>
+    <div class="field">
+      <label for="ps-src">Source</label>
+      <select id="ps-src" name="src" class="input-line" [ngModel]="newSource()" (ngModelChange)="newSource.set($event)">
+        @for (s of sources; track s) { <option [value]="s">{{ sourceLabels[s] }}</option> }
+      </select>
+    </div>
+    <div class="field">
+      <label for="ps-nom">Nom (facultatif)</label>
+      <input id="ps-nom" name="nom" class="input-line" autocomplete="off" [ngModel]="newName()" (ngModelChange)="newName.set($event)" />
+    </div>
+    <div class="field">
+      <label for="ps-plan">Formule qui l’intéresse</label>
+      <select id="ps-plan" name="plan" class="input-line" [ngModel]="newPlan()" (ngModelChange)="newPlan.set($event)">
+        <option value="">Ne sait pas</option>
+        @for (p of plans(); track p.id) { <option [value]="p.name">{{ p.name }}</option> }
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary" [disabled]="adding()">{{ adding() ? 'Ajout…' : 'Ajouter' }}</button>
+    @if (addMessage(); as m) {
+      <p class="ps-add-msg" [class.error-text]="!m.ok" [class.ps-ok]="m.ok" role="status">{{ m.text }}</p>
+    }
+  </form>
+
+  @if (lastChance().length) {
+    <div class="alert alert--warning" role="status">
+      {{ lastChance().length }} prospect(s) sous le seuil d’alerte : sans interaction, leur fiche sera supprimée automatiquement à 0 %.
+      Dernière occasion de les relancer.
+    </div>
+  }
+
+  <div class="ps-columns">
+    <!-- ===== LISTE ===== -->
+    <section class="card card--flush ps-list">
+      <div class="tabs ps-tabs" role="tablist" aria-label="Listes">
+        <button type="button" class="tab" role="tab" [attr.aria-selected]="scope() === 'TODAY'" (click)="setScope('TODAY')">À relancer aujourd’hui</button>
+        <button type="button" class="tab" role="tab" [attr.aria-selected]="scope() === 'OPEN'" (click)="setScope('OPEN')">Tous en cours</button>
+        <button type="button" class="tab" role="tab" [attr.aria-selected]="scope() === 'CLOSED'" (click)="setScope('CLOSED')">Convertis et perdus</button>
+      </div>
+      @for (p of list(); track p.id) {
+        <button type="button" class="ps-row" [attr.aria-pressed]="p.id === selectedId()" (click)="select(p.id)">
+          <span class="ps-score" [class]="'ps-score ps-score--' + scoreTone(p)">
+            <span class="ps-score-value">{{ p.score }} %</span>
+            <span class="bar"><span [style.width.%]="p.score"></span></span>
+          </span>
+          <span class="ps-row-main">
+            <span class="text-strong">{{ p.name ?? 'Sans nom' }}</span>
+            <span class="follow-detail">{{ p.phone }} · {{ sourceLabels[p.source] }} · {{ statusLabels[p.status] }}</span>
+          </span>
+          <span class="ps-next">{{ nextText(p) }}</span>
+        </button>
+      } @empty {
+        <p class="empty">{{ scope() === 'TODAY' ? 'Personne à relancer aujourd’hui.' : 'Aucun prospect.' }}</p>
+      }
+
+      @if (scope() === 'CLOSED' && stats().length) {
+        <div class="ps-stats">
+          <h3 class="card-title">Quelles sources ramènent des membres ?</h3>
+          <p class="help">Compteurs anonymes, conservés même après la suppression des fiches.</p>
+          <div class="grid-row grid-row--head ps-stats-row"><span>Source</span><span>Convertis</span><span>Perdus</span><span>Supprimés à 0 %</span></div>
+          @for (s of stats(); track s.source) {
+            <div class="grid-row ps-stats-row"><span>{{ sourceLabels[s.source] }}</span><span>{{ s.converted }}</span><span>{{ s.lost }}</span><span>{{ s.expired }}</span></div>
+          }
+        </div>
+      }
+    </section>
+
+    <!-- ===== FICHE ===== -->
+    <aside class="card ps-detail">
+      @if (selected(); as p) {
+        <div class="ps-detail-head">
+          <div>
+            <h2 class="card-title">{{ p.name ?? 'Prospect sans nom' }}</h2>
+            <p class="help">{{ p.phone }} · {{ sourceLabels[p.source] }} · premier contact le {{ frDate(p.firstContactDate) }}</p>
+            @if (p.interestedPlan) { <p class="help">Intéressé par : {{ p.interestedPlan }}</p> }
+          </div>
+          <div class="ps-big-score" [class]="'ps-big-score ps-score--' + scoreTone(p)">{{ p.score }} %</div>
+        </div>
+
+        @if (p.status !== 'CONVERTED' && p.status !== 'LOST') {
+          <div class="ps-block">
+            <h3 class="ps-block-title">Ce qui s’est passé</h3>
+            <div class="choices">
+              <button type="button" class="choice" (click)="interaction('REPLY')">A répondu (+)</button>
+              <button type="button" class="choice" (click)="interaction('VISIT')">Tarif demandé ou visite (+)</button>
+              <button type="button" class="choice" (click)="interaction('TRIAL')">Séance d’essai faite (+)</button>
+            </div>
+          </div>
+
+          <div class="ps-block">
+            <h3 class="ps-block-title">Relancer</h3>
+            <div class="field">
+              <label for="ps-tpl">Modèle de message</label>
+              <select id="ps-tpl" class="input-line" [ngModel]="template()" (ngModelChange)="template.set($event)">
+                <option value="J1">J+1 : merci pour la visite, tarifs</option>
+                <option value="J3">J+3 : invitation à une séance d’essai</option>
+                <option value="J7">J+7 : dernière invitation</option>
+              </select>
+            </div>
+            <p class="ps-message">{{ templateText() }}</p>
+            <div class="ps-actions">
+              <button type="button" class="btn btn-primary" (click)="send('WHATSAPP')">Envoyer par WhatsApp</button>
+              <button type="button" class="btn btn-outline" (click)="send('SMS')">Envoyer par SMS</button>
+            </div>
+          </div>
+
+          <div class="ps-actions">
+            <button type="button" class="btn btn-primary" (click)="convert(p)">Convertir en membre</button>
+            <button type="button" class="btn btn-outline" (click)="lose()">Marquer perdu</button>
+          </div>
+        } @else if (p.convertedMemberId) {
+          <a class="btn btn-outline" [routerLink]="['/members', p.convertedMemberId]">Ouvrir la fiche membre</a>
+        }
+
+        <div class="ps-block">
+          <h3 class="ps-block-title">Historique</h3>
+          <ol class="ps-history">
+            @for (e of events(); track e.id) {
+              <li><span>{{ e.label }}</span><span class="ps-delta" [class.neg]="(e.delta ?? 0) < 0">{{ e.delta === null ? '' : (e.delta > 0 ? '+' : '') + e.delta }}</span></li>
+            }
+          </ol>
+        </div>
+      } @else {
+        <p class="empty">Sélectionnez un prospect pour voir sa fiche.</p>
+      }
+    </aside>
+  </div>
+</div>
+
+@if (converting(); as pre) {
+  <app-member-form [prefill]="pre" (saved)="onConverted()" (closed)="converting.set(null)" />
+}

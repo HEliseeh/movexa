@@ -77,6 +77,14 @@ public class Member implements Serializable {
     @Column(name = "visits_last_30_days", nullable = false)
     private Integer visitsLast30Days = 0;
 
+    /** Contenu du QR code personnel : aléatoire, pour qu'on ne puisse pas le deviner à partir du numéro. */
+    @Column(name = "qr_token", length = 40, unique = true)
+    private String qrToken;
+
+    /** Un membre « supprimé » est archivé : ses paiements et passages restent consultables. */
+    @Column(name = "archived", nullable = false)
+    private boolean archived = false;
+
     @PrePersist
     void onCreate() {
         if (joinDate == null) {
@@ -84,6 +92,9 @@ public class Member implements Serializable {
         }
         if (subscriptionStartDate == null) {
             subscriptionStartDate = joinDate;
+        }
+        if (qrToken == null) {
+            qrToken = java.util.UUID.randomUUID().toString().replace("-", "");
         }
     }
 

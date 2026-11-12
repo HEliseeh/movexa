@@ -1,0 +1,109 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <nav class="mi-crumb" aria-label="Fil d'Ariane"><a routerLink="/members">Membres</a> / Import</nav>
+      <h1 class="page-title">Importer une liste de membres</h1>
+      <p class="page-subtitle">Démarrez avec les membres actuels, depuis un fichier Excel enregistré en CSV.</p>
+    </div>
+  </header>
+
+  <!-- ===== ÉTAPES ===== -->
+  <ol class="mi-steps">
+    @for (s of steps; track s; let i = $index) {
+      <li [class.current]="step() === i + 1" [class.done]="step() > i + 1" [attr.aria-current]="step() === i + 1 ? 'step' : null">
+        <span class="mi-dot">{{ step() > i + 1 ? '✓' : i + 1 }}</span>{{ s }}
+      </li>
+    }
+  </ol>
+
+  @if (error(); as e) {
+    <div class="alert alert--error" role="alert">{{ e }}</div>
+  }
+
+  <section class="card mi-card">
+    @switch (step()) {
+      @case (1) {
+        <h2 class="card-title">Choisir le fichier</h2>
+        <p>Une ligne par membre, avec au moins le <strong>nom</strong> et le <strong>téléphone</strong>. La formule et la date de fin sont facultatives : elles servent à reprendre les abonnements en cours.</p>
+        <label class="mi-drop">
+          <input type="file" accept=".csv,text/csv,.xlsx,.xls" (change)="onFile($event)" />
+          <span class="text-strong">Choisir un fichier CSV</span>
+          <span class="help">Dans Excel : Fichier › Enregistrer sous › « CSV UTF-8 (délimité par des points-virgules) ».</span>
+        </label>
+      }
+
+      @case (2) {
+        <h2 class="card-title">Associer les colonnes · {{ fileName() }}</h2>
+        <p class="help">{{ dataRows().length }} lignes trouvées. Vérifiez à quoi correspond chaque colonne.</p>
+        <div class="mi-map">
+          <div class="mi-map-row mi-map-head"><span>Colonne du fichier</span><span>Exemple</span><span>Champ MOVEXA</span></div>
+          @for (c of columns(); track c.index) {
+            <div class="mi-map-row">
+              <span class="text-strong">{{ c.header }}</span>
+              <span>{{ c.example || '—' }}</span>
+              <select class="input-line" [attr.aria-label]="'Champ pour la colonne ' + c.header" [ngModel]="c.field" (ngModelChange)="setField(c.index, $event)">
+                @for (f of fields; track f) { <option [value]="f">{{ fieldLabels[f] }}</option> }
+              </select>
+            </div>
+          }
+        </div>
+        @if (mappingError(); as e) { <p class="error-text">{{ e }}</p> }
+        <div class="mi-nav">
+          <button type="button" class="btn btn-outline" (click)="restart()">Autre fichier</button>
+          <button type="button" class="btn btn-primary" [disabled]="busy() || !!mappingError()" (click)="verify()">{{ busy() ? 'Vérification…' : 'Vérifier' }}</button>
+        </div>
+      }
+
+      @case (3) {
+        @if (check(); as c) {
+          <h2 class="card-title">Vérification</h2>
+          <div class="mi-summary">
+            <div class="mi-sum mi-sum--ok"><strong>{{ c.ready }}</strong> lignes prêtes à importer</div>
+            <div class="mi-sum mi-sum--warn"><strong>{{ c.duplicates }}</strong> numéros déjà connus</div>
+            <div class="mi-sum mi-sum--ko"><strong>{{ c.invalid }}</strong> lignes à corriger, ignorées</div>
+          </div>
+          @if (c.duplicates > 0) {
+            <fieldset class="mi-fieldset">
+              <legend class="field-label">Membres déjà dans MOVEXA</legend>
+              <div class="choices">
+                <button type="button" class="choice" [attr.aria-pressed]="!updateExisting()" (click)="updateExisting.set(false)">Garder les fiches existantes</button>
+                <button type="button" class="choice" [attr.aria-pressed]="updateExisting()" (click)="updateExisting.set(true)">Mettre à jour avec le fichier</button>
+              </div>
+            </fieldset>
+          }
+          <div class="grid-scroll">
+            <div class="mi-preview">
+              <div class="grid-row grid-row--head"><span>Ligne</span><span>Membre</span><span>Téléphone</span><span>Formule</span><span>Fin</span><span>Vérification</span></div>
+              @for (l of c.lines; track l.line) {
+                <div class="grid-row">
+                  <span>{{ l.line }}</span><span>{{ l.name || '—' }}</span><span>{{ l.phone || 'Vide' }}</span>
+                  <span>{{ l.planName || '—' }}</span><span>{{ frDate(l.endDate) }}</span>
+                  <span class="status"><span class="status-dot" [class]="'status-dot status-dot--' + tone(l.status)"></span>{{ l.message }}</span>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="mi-nav">
+            <button type="button" class="btn btn-outline" (click)="step.set(2)">Retour</button>
+            <button type="button" class="btn btn-primary" [disabled]="busy() || toImport() === 0" (click)="doImport()">
+              {{ busy() ? 'Import…' : 'Importer ' + toImport() + ' membres' }}
+            </button>
+          </div>
+        }
+      }
+
+      @case (4) {
+        @if (result(); as r) {
+          <div class="alert alert--success" role="status">
+            <span><strong>{{ r.imported }} membres importés</strong>@if (r.updated) { , {{ r.updated }} mis à jour}. Les abonnements en cours ont été repris d’après la date de fin.</span>
+          </div>
+          <p class="help">Les membres importés n’ont pas encore reçu leur QR code : envoyez-le depuis leur fiche, ou à leur prochain passage.</p>
+          <div class="mi-nav">
+            <button type="button" class="btn btn-outline" (click)="restart()">Importer un autre fichier</button>
+            <a routerLink="/members" class="btn btn-primary">Voir les membres</a>
+          </div>
+        }
+      }
+    }
+  </section>
+</div>

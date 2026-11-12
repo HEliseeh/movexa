@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        Modules du MVP : formules, abonnements, encaissements, pointage, relances, prospects,
+        paramètres de la salle et clôture de caisse.
+        Les nouvelles tables utilisent un id auto-incrémenté (identity) : plus simple pour les
+        insertions SQL ci-dessous que la séquence partagée de JHipster.
+    -->
+
+    <!-- ================= Membre : QR code, archivage, téléphone normalisé ================= -->
+    <changeSet id="20261112000001-1" author="elisee">
+        <addColumn tableName="member">
+            <column name="qr_token" type="varchar(40)">
+                <constraints unique="true" uniqueConstraintName="ux_member_qr_token"/>
+            </column>
+            <column name="archived" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addColumn tableName="app_user">
+            <!-- Uniquement les chiffres du téléphone : sert à la recherche et à la détection des doublons -->
+            <column name="phone_digits" type="varchar(20)"/>
+        </addColumn>
+        <sql>
+            UPDATE member SET qr_token = md5(random()::text || id::text) WHERE qr_token IS NULL;
+            UPDATE app_user SET phone_digits = regexp_replace(phone, '\D', '', 'g') WHERE phone IS NOT NULL;
+        </sql>
+        <createIndex tableName="app_user" indexName="idx_app_user_phone_digits">
+            <column name="phone_digits"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ================= Formules (catalogue défini par le gérant) ================= -->
+    <changeSet id="20261112000001-2" author="elisee">
+        <createTable tableName="plan">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(100)"><constraints nullable="false"/></column>
+            <!-- Prix en FCFA (entier : pas de centimes) -->
+            <column name="price" type="bigint"><constraints nullable="false"/></column>
+            <!-- 0 = valable le jour même (séance unique) -->
+            <column name="duration_days" type="integer"><constraints nullable="false"/></column>
+            <column name="active" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+        </createTable>
+        <!-- Catalogue de départ : prix d'exemple que le gérant modifie dans l'écran Abonnements > Formules -->
+        <sql>
+            INSERT INTO plan (name, price, duration_days, active) VALUES
+              ('Séance unique', 1500, 0, TRUE),
+              ('Semaine', 5000, 7, TRUE),
+              ('Mensuel', 15000, 30, TRUE),
+              ('Trimestriel', 40000, 90, TRUE),
+              ('Semestriel', 75000, 180, TRUE),
+              ('Annuel', 140000, 365, TRUE);
+        </sql>
+    </changeSet>
+
+    <!-- ================= Abonnements (une ligne par période payée) ================= -->
+    <changeSet id="20261112000001-3" author="elisee">
+        <createTable tableName="subscription">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="member_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="plan_id" type="bigint"/>
+            <!-- Copie du nom et du prix au moment de la vente : la formule peut changer ensuite -->
+            <column name="plan_name" type="varchar(100)"><constraints nullable="false"/></column>
+            <column name="price" type="bigint"><constraints nullable="false"/></column>
+            <column name="start_date" type="date"><constraints nullable="false"/></column>
+            <column name="end_date" type="date"><constraints nullable="false"/></column>
+            <column name="cancelled" type="boolean" defaultValueBoolean="false"><constraints nullable="false"/></column>
+            <column name="created_at" type="timestamp"><constraints nullable="false"/></column>
+            <column name="created_by" type="varchar(100)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="subscription" baseColumnNames="member_id" constraintName="fk_subscription_member"
+                                 referencedTableName="member" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="subscription" baseColumnNames="plan_id" constraintName="fk_subscription_plan"
+                                 referencedTableName="plan" referencedColumnNames="id"/>
+        <createIndex tableName="subscription" indexName="idx_subscription_member"><column name="member_id"/></createIndex>
+
+        <!-- Reprise de l'existant : les membres déjà saisis ont une échéance mais pas de ligne d'abonnement -->
+        <sql>
+            UPDATE member SET plan = 'Mensuel' WHERE plan IN ('Mensuel Essentiel', 'Mensuel Illimité');
+            INSERT INTO subscription (member_id, plan_id, plan_name, price, start_date, end_date, created_at, created_by)
+            SELECT m.id, p.id, COALESCE(m.plan, 'Formule inconnue'), COALESCE(p.price, 0),
+                   m.subscription_start_date, m.expiry_date, CURRENT_TIMESTAMP, 'reprise'
+              FROM member m
+              LEFT JOIN plan p ON p.name = m.plan
+             WHERE m.expiry_date IS NOT NULL;
+        </sql>
+    </changeSet>
+
+    <!-- ================= Paiements ================= -->
+    <changeSet id="20261112000001-4" author="elisee">
+        <createSequence sequenceName="receipt_seq" startValue="1" incrementBy="1"/>
+        <createTable tableName="payment">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="member_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="plan_id" type="bigint"/>
+            <column name="subscription_id" type="bigint"/>
+            <column name="plan_name" type="varchar(100)"/>
+            <column name="amount" type="bigint"><constraints nullable="false"/></column>
+            <!-- CASH, MTN_MOMO, MOOV_MONEY, PAYMENT_LINK -->
+            <column name="method" type="varchar(20)"><constraints nullable="false"/></column>
+            <!-- PENDING (lien envoyé), PAID, CANCELLED -->
+            <column name="status" type="varchar(20)"><constraints nullable="false"/></column>
+            <column name="receipt_number" type="varchar(20)">
+                <constraints unique="true" uniqueConstraintName="ux_payment_receipt"/>
+            </column>
+            <!-- Référence libre saisie à l'accueil (ex. id de transaction MoMo) -->
+            <column name="reference" type="varchar(100)"/>
+            <!-- Lien de paiement en ligne : jeton public et id de transaction de l'agrégateur -->
+            <column name="link_token" type="varchar(40)">
+                <constraints unique="true" uniqueConstraintName="ux_payment_link_token"/>
+            </column>
+            <column name="transaction_id" type="varchar(100)">
+                <constraints unique="true" uniqueConstraintName="ux_payment_transaction"/>
+            </column>
+            <column name="start_date" type="date"/>
+            <column name="created_at" type="timestamp"><constraints nullable="false"/></column>
+            <column name="created_by" type="varchar(100)"/>
+            <column name="paid_at" type="timestamp"/>
+            <column name="cancelled_at" type="timestamp"/>
+            <column name="cancelled_by" type="varchar(100)"/>
+            <column name="cancel_reason" type="varchar(300)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="payment" baseColumnNames="member_id" constraintName="fk_payment_member"
+                                 referencedTableName="member" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="payment" baseColumnNames="plan_id" constraintName="fk_payment_plan"
+                                 referencedTableName="plan" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="payment" baseColumnNames="subscription_id" constraintName="fk_payment_subscription"
+                                 referencedTableName="subscription" referencedColumnNames="id"/>
+        <createIndex tableName="payment" indexName="idx_payment_member"><column name="member_id"/></createIndex>
+        <createIndex tableName="payment" indexName="idx_payment_paid_at"><column name="paid_at"/></createIndex>
+        <createIndex tableName="payment" indexName="idx_payment_created_at"><column name="created_at"/></createIndex>
+    </changeSet>
+
+    <!-- ================= Pointages ================= -->
+    <changeSet id="20261112000001-5" author="elisee">
+        <createTable tableName="check_in">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="member_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="checked_at" type="timestamp"><constraints nullable="false"/></column>
+            <!-- QR ou SEARCH -->
+            <column name="method" type="varchar(20)"><constraints nullable="false"/></column>
+            <!-- ALLOWED, ALLOWED_EXPIRING, REFUSED -->
+            <column name="result" type="varchar(20)"><constraints nullable="false"/></column>
+            <column name="agent" type="varchar(100)"/>
+            <!-- Identifiant généré par le navigateur : évite les doublons quand un pointage hors ligne est renvoyé -->
+            <column name="client_id" type="varchar(40)">
+                <constraints unique="true" uniqueConstraintName="ux_check_in_client_id"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="check_in" baseColumnNames="member_id" constraintName="fk_check_in_member"
+                                 referencedTableName="member" referencedColumnNames="id"/>
+        <createIndex tableName="check_in" indexName="idx_check_in_checked_at"><column name="checked_at"/></createIndex>
+        <createIndex tableName="check_in" indexName="idx_check_in_member"><column name="member_id"/></createIndex>
+    </changeSet>
+
+    <!-- ================= Relances envoyées aux membres ================= -->
+    <changeSet id="20261112000001-6" author="elisee">
+        <createTable tableName="reminder">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="member_id" type="bigint"><constraints nullable="false"/></column>
+            <!-- BEFORE_7, BEFORE_1, AFTER_1, AFTER_7 -->
+            <column name="rule" type="varchar(20)"><constraints nullable="false"/></column>
+            <!-- SMS ou WHATSAPP -->
+            <column name="channel" type="varchar(20)"><constraints nullable="false"/></column>
+            <!-- Échéance visée : une relance par règle et par échéance -->
+            <column name="target_end_date" type="date"/>
+            <column name="message" type="varchar(600)"/>
+            <column name="sent_at" type="timestamp"><constraints nullable="false"/></column>
+            <column name="sent_by" type="varchar(100)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="reminder" baseColumnNames="member_id" constraintName="fk_reminder_member"
+                                 referencedTableName="member" referencedColumnNames="id"/>
+        <createIndex tableName="reminder" indexName="idx_reminder_member"><column name="member_id"/></createIndex>
+        <createIndex tableName="reminder" indexName="idx_reminder_sent_at"><column name="sent_at"/></createIndex>
+    </changeSet>
+
+    <!-- ================= Prospects ================= -->
+    <changeSet id="20261112000001-7" author="elisee">
+        <createTable tableName="prospect">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(150)"/>
+            <column name="phone" type="varchar(20)"><constraints nullable="false"/></column>
+            <column name="phone_digits" type="varchar(20)"><constraints nullable="false"/></column>
+            <!-- WALK_IN, REFERRAL, WORD_OF_MOUTH, SOCIAL, FLYER, OTHER -->
+            <column name="source" type="varchar(20)"><constraints nullable="false"/></column>
+            <!-- NEW, CONTACTED, TRIAL, CONVERTED, LOST -->
+            <column name="status" type="varchar(20)"><constraints nullable="false"/></column>
+            <column name="first_contact_date" type="date"><constraints nullable="false"/></column>
+            <column name="interested_plan" type="varchar(100)"/>
+            <column name="notes" type="varchar(500)"/>
+            <!-- Chance d'adhésion, de 0 à 100 -->
+            <column name="score" type="integer"><constraints nullable="false"/></column>
+            <!-- Dernier signe d'intérêt du prospect (sert au délai de grâce avant la baisse quotidienne) -->
+            <column name="last_interaction_at" type="timestamp"><constraints nullable="false"/></column>
+            <column name="next_follow_up" type="date"/>
+            <!-- 0 = aucune relance, 1 = J+1 faite, 2 = J+3 faite, 3 = J+7 faite -->
+            <column name="follow_up_step" type="integer" defaultValueNumeric="0"><constraints nullable="false"/></column>
+            <column name="converted_member_id" type="bigint"/>
+            <column name="closed_at" type="timestamp"/>
+            <column name="created_at" type="timestamp"><constraints nullable="false"/></column>
+            <column name="created_by" type="varchar(100)"/>
+        </createTable>
+        <createIndex tableName="prospect" indexName="idx_prospect_phone_digits"><column name="phone_digits"/></createIndex>
+
+        <createTable tableName="prospect_event">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="prospect_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="label" type="varchar(200)"><constraints nullable="false"/></column>
+            <column name="delta" type="integer"/>
+            <column name="created_at" type="timestamp"><constraints nullable="false"/></column>
+            <column name="created_by" type="varchar(100)"/>
+        </createTable>
+        <!-- Supprimer un prospect supprime son historique (données personnelles) -->
+        <addForeignKeyConstraint baseTableName="prospect_event" baseColumnNames="prospect_id" constraintName="fk_prospect_event_prospect"
+                                 referencedTableName="prospect" referencedColumnNames="id" onDelete="CASCADE"/>
+
+        <!-- Compteurs anonymes conservés après suppression : quelles sources ramènent des membres -->
+        <createTable tableName="prospect_outcome">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="source" type="varchar(20)"><constraints nullable="false"/></column>
+            <!-- CONVERTED, LOST, EXPIRED (supprimé à 0 %) -->
+            <column name="outcome" type="varchar(20)"><constraints nullable="false"/></column>
+            <column name="days_to_decision" type="integer"/>
+            <column name="recorded_at" type="timestamp"><constraints nullable="false"/></column>
+        </createTable>
+
+        <!-- Journal des tâches planifiées, sans donnée personnelle -->
+        <createTable tableName="job_run">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="job_name" type="varchar(50)"><constraints nullable="false"/></column>
+            <column name="ran_at" type="timestamp"><constraints nullable="false"/></column>
+            <column name="updated_count" type="integer"/>
+            <column name="deleted_count" type="integer"/>
+            <column name="details" type="varchar(300)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- ================= Paramètres de la salle (une seule ligne tant qu'il n'y a pas de multi-salles) ================= -->
+    <changeSet id="20261112000001-8" author="elisee">
+        <createTable tableName="gym_settings">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="name" type="varchar(150)"/>
+            <column name="phone" type="varchar(30)"/>
+            <column name="address" type="varchar(200)"/>
+            <column name="opening_hours" type="varchar(100)"/>
+            <column name="momo_number" type="varchar(30)"/>
+            <column name="moov_number" type="varchar(30)"/>
+            <column name="receipt_footer" type="varchar(300)"/>
+            <column name="expiring_soon_days" type="integer" defaultValueNumeric="7"><constraints nullable="false"/></column>
+            <column name="cash_enabled" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="mtn_enabled" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="moov_enabled" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="aggregator" type="varchar(20)" defaultValue="KKIAPAY"/>
+            <!-- Vide tant que le compte marchand n'est pas ouvert : le paiement par lien est alors désactivé -->
+            <column name="payment_link_base_url" type="varchar(200)"/>
+            <column name="reminder_before7_sms" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="reminder_before7_whatsapp" type="boolean" defaultValueBoolean="false"><constraints nullable="false"/></column>
+            <column name="reminder_before1_sms" type="boolean" defaultValueBoolean="false"><constraints nullable="false"/></column>
+            <column name="reminder_before1_whatsapp" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="reminder_after1_sms" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="reminder_after1_whatsapp" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="reminder_after7_sms" type="boolean" defaultValueBoolean="false"><constraints nullable="false"/></column>
+            <column name="reminder_after7_whatsapp" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="score_walk_in" type="integer" defaultValueNumeric="50"><constraints nullable="false"/></column>
+            <column name="score_referral" type="integer" defaultValueNumeric="60"><constraints nullable="false"/></column>
+            <column name="score_word_of_mouth" type="integer" defaultValueNumeric="40"><constraints nullable="false"/></column>
+            <column name="score_social" type="integer" defaultValueNumeric="30"><constraints nullable="false"/></column>
+            <column name="score_flyer" type="integer" defaultValueNumeric="20"><constraints nullable="false"/></column>
+            <column name="score_other" type="integer" defaultValueNumeric="30"><constraints nullable="false"/></column>
+            <column name="points_reply" type="integer" defaultValueNumeric="15"><constraints nullable="false"/></column>
+            <column name="points_visit" type="integer" defaultValueNumeric="20"><constraints nullable="false"/></column>
+            <column name="points_trial" type="integer" defaultValueNumeric="25"><constraints nullable="false"/></column>
+            <column name="grace_days" type="integer" defaultValueNumeric="3"><constraints nullable="false"/></column>
+            <column name="decay_per_day" type="integer" defaultValueNumeric="3"><constraints nullable="false"/></column>
+            <column name="alert_threshold" type="integer" defaultValueNumeric="10"><constraints nullable="false"/></column>
+        </createTable>
+        <insert tableName="gym_settings">
+            <column name="id" valueNumeric="1"/>
+            <column name="name" value="Ma salle"/>
+            <column name="receipt_footer" value="Merci de votre confiance."/>
+        </insert>
+    </changeSet>
+
+    <!-- ================= Clôture de caisse journalière ================= -->
+    <changeSet id="20261112000001-9" author="elisee">
+        <createTable tableName="cash_closure">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="closing_date" type="date">
+                <constraints nullable="false" unique="true" uniqueConstraintName="ux_cash_closure_date"/>
+            </column>
+            <column name="expected_cash" type="bigint"><constraints nullable="false"/></column>
+            <column name="counted_cash" type="bigint"><constraints nullable="false"/></column>
+            <column name="expected_mtn" type="bigint"><constraints nullable="false"/></column>
+            <column name="counted_mtn" type="bigint"><constraints nullable="false"/></column>
+            <column name="expected_moov" type="bigint"><constraints nullable="false"/></column>
+            <column name="counted_moov" type="bigint"><constraints nullable="false"/></column>
+            <column name="expected_link" type="bigint"><constraints nullable="false"/></column>
+            <column name="reason" type="varchar(300)"/>
+            <column name="closed_by" type="varchar(100)"/>
+            <column name="closed_at" type="timestamp"><constraints nullable="false"/></column>
+        </createTable>
+    </changeSet>
+
+    <!-- ================= Données fictives (contexte faker, profil dev) ================= -->
+    <changeSet id="20261112000001-10-data" author="elisee" context="faker">
+        <sql>
+            -- Un paiement par abonnement repris (moyen de paiement varié)
+            INSERT INTO payment (member_id, plan_id, subscription_id, plan_name, amount, method, status, receipt_number,
+                                 start_date, created_at, created_by, paid_at)
+            SELECT s.member_id, s.plan_id, s.id, s.plan_name, s.price,
+                   (ARRAY['CASH','MTN_MOMO','MOOV_MONEY','CASH'])[1 + (s.member_id % 4)::int],
+                   'PAID', 'R-' || lpad(nextval('receipt_seq')::text, 5, '0'),
+                   s.start_date, s.start_date + TIME '10:00', 'admin', s.start_date + TIME '10:00'
+              FROM subscription s;
+
+            -- Quelques paiements du jour pour la caisse et le tableau de bord
+            UPDATE payment SET paid_at = CURRENT_DATE + ((8 + (id % 10)) || ' hours')::interval,
+                               created_at = CURRENT_DATE + ((8 + (id % 10)) || ' hours')::interval
+             WHERE id IN (SELECT id FROM payment ORDER BY id DESC LIMIT 6);
+
+            -- Fréquentation : environ un passage tous les 3 jours sur les 20 derniers jours pour les membres à jour
+            INSERT INTO check_in (member_id, checked_at, method, result, agent)
+            SELECT m.id,
+                   (CURRENT_DATE - d) + ((7 + ((m.id + d) % 13)) || ' hours')::interval + ((m.id * 7 % 60) || ' minutes')::interval,
+                   CASE WHEN (m.id + d) % 2 = 0 THEN 'QR' ELSE 'SEARCH' END,
+                   CASE WHEN m.expiry_date &lt; CURRENT_DATE - d THEN 'REFUSED'
+                        WHEN m.expiry_date - (CURRENT_DATE - d) &lt;= 7 THEN 'ALLOWED_EXPIRING'
+                        ELSE 'ALLOWED' END,
+                   'user'
+              FROM member m
+             CROSS JOIN generate_series(0, 19) AS d
+             WHERE (m.id + d) % 3 = 0 AND m.expiry_date IS NOT NULL;
+
+            UPDATE member m SET last_visit_date = sub.last_day
+              FROM (SELECT member_id, max(checked_at)::date AS last_day FROM check_in WHERE result &lt;&gt; 'REFUSED' GROUP BY member_id) sub
+             WHERE sub.member_id = m.id;
+
+            -- Prospects d'exemple
+            INSERT INTO prospect (name, phone, phone_digits, source, status, first_contact_date, interested_plan, notes,
+                                  score, last_interaction_at, next_follow_up, follow_up_step, created_at, created_by) VALUES
+              ('Awa Sossou', '66 10 54 37', '66105437', 'WALK_IN', 'CONTACTED', CURRENT_DATE - 1, 'Mensuel', 'A demandé les tarifs', 65, CURRENT_TIMESTAMP - INTERVAL '1 day', CURRENT_DATE, 0, CURRENT_TIMESTAMP - INTERVAL '1 day', 'user'),
+              ('Romaric Agbo', '90 66 12 48', '90661248', 'REFERRAL', 'NEW', CURRENT_DATE - 5, 'Trimestriel', 'Parrainé par un membre', 57, CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_DATE - 2, 1, CURRENT_TIMESTAMP - INTERVAL '5 days', 'user'),
+              ('Grâce Tchibozo', '96 72 05 13', '96720513', 'SOCIAL', 'CONTACTED', CURRENT_DATE - 8, 'Mensuel', NULL, 41, CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_DATE, 2, CURRENT_TIMESTAMP - INTERVAL '8 days', 'user'),
+              ('Bernice Akpovi', '67 81 30 22', '67813022', 'WALK_IN', 'TRIAL', CURRENT_DATE - 7, 'Mensuel', 'Essai prévu samedi', 85, CURRENT_TIMESTAMP - INTERVAL '1 day', CURRENT_DATE + 2, 1, CURRENT_TIMESTAMP - INTERVAL '7 days', 'user'),
+              (NULL, '61 40 92 75', '61409275', 'FLYER', 'NEW', CURRENT_DATE - 17, NULL, NULL, 8, CURRENT_TIMESTAMP - INTERVAL '10 days', CURRENT_DATE - 10, 1, CURRENT_TIMESTAMP - INTERVAL '17 days', 'user');
+
+            INSERT INTO prospect_event (prospect_id, label, delta, created_at, created_by)
+            SELECT id, 'Premier contact', NULL, created_at, 'user' FROM prospect;
+        </sql>
+    </changeSet>
+</databaseChangeLog>

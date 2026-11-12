@@ -3,10 +3,14 @@
   <!-- ===== EN-TÊTE ===== -->
   <header class="sheet-header">
     <div class="header-left">
-      <h1 class="page-title">Adhérents</h1>
+      <h1 class="page-title">Membres</h1>
       <button type="button" class="btn btn-primary" (click)="resetFilters()">Réinitialiser tous les filtres</button>
     </div>
-    <button type="button" class="btn btn-primary">Exporter les données</button>
+    <div class="page-actions">
+      <a routerLink="/members/import" class="btn btn-outline">Importer Excel / CSV</a>
+      <button type="button" class="btn btn-outline" (click)="exportCsv()">Exporter les données</button>
+      <button type="button" class="btn btn-primary" (click)="editing.set(null)">Nouveau membre</button>
+    </div>
   </header>
 
   <!-- ===== LISTE ===== -->
@@ -14,30 +18,25 @@
     <div class="members-grid">
       <div class="grid-row grid-row--head">
         <span></span>
-        <span class="head-label">N°</span>
         <div class="head-filter">
-          <input
-            class="input-line input-line--filter"
-            aria-label="Filtrer par adhérent"
-            placeholder="Adhérent"
-            [ngModel]="query()"
-            (ngModelChange)="query.set($event)"
-          />
-          <button type="button" class="sort-btn" aria-label="Trier par adhérent" (click)="toggleSort('name')">{{ sortIcon('name') }}</button>
+          <input class="input-line input-line--filter" aria-label="Filtrer par nom ou téléphone" placeholder="Membre ou téléphone"
+                 [ngModel]="query()" (ngModelChange)="query.set($event)" />
+          <button type="button" class="sort-btn" aria-label="Trier par nom" (click)="toggleSort('name')">{{ sortIcon('name') }}</button>
         </div>
-        <select class="input-line input-line--filter" aria-label="Filtrer par statut" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+        <span class="head-label">Téléphone</span>
+        <select class="input-line input-line--filter" aria-label="Filtrer par statut" [ngModel]="stateFilter()" (ngModelChange)="stateFilter.set($event)">
           <option value="">Statut</option>
-          @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+          @for (s of states; track s) { <option [value]="s">{{ stateLabels[s] }}</option> }
         </select>
         <select class="input-line input-line--filter" aria-label="Filtrer par formule" [ngModel]="planFilter()" (ngModelChange)="planFilter.set($event)">
           <option value="">Formule</option>
-          @for (p of plans; track p) { <option [value]="p">{{ p }}</option> }
+          @for (p of plans(); track p.id) { <option [value]="p.name">{{ p.name }}</option> }
         </select>
-        <span class="head-label">Coach</span>
         <div class="head-filter">
-          <span class="head-label">Échéance</span>
-          <button type="button" class="sort-btn" aria-label="Trier par échéance" (click)="toggleSort('expiry')">{{ sortIcon('expiry') }}</button>
+          <span class="head-label">Fin</span>
+          <button type="button" class="sort-btn" aria-label="Trier par date de fin" (click)="toggleSort('end')">{{ sortIcon('end') }}</button>
         </div>
+        <span class="head-label">Inscrit le</span>
         <span class="head-label">Dernière visite</span>
       </div>
 
@@ -45,73 +44,61 @@
         @for (m of rows(); track m.id) {
           <div class="stripe">
             <div class="grid-row member-row">
-              <button
-                type="button"
-                class="row-toggle"
-                [attr.aria-expanded]="openId() === m.id"
-                [attr.aria-label]="(openId() === m.id ? 'Masquer la fiche de ' : 'Afficher la fiche de ') + m.name"
-                (click)="toggleRow(m.id)"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <button type="button" class="row-toggle" [attr.aria-expanded]="openId() === m.id"
+                      [attr.aria-label]="(openId() === m.id ? 'Replier ' : 'Déplier ') + m.firstName + ' ' + m.lastName" (click)="toggleRow(m.id)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path [attr.d]="openId() === m.id ? 'M6 9l6 6 6-6' : 'M9 6l6 6-6 6'" />
                 </svg>
               </button>
-              <span>{{ m.number }}</span>
-              <span class="text-strong">{{ m.name }}</span>
-              <span class="status"><span class="status-dot" [class]="'status-dot status-dot--' + tone(m.status)"></span>{{ m.status }}</span>
-              <span>{{ m.plan }}</span>
-              <span>{{ m.coach }}</span>
-              <span>{{ formatDate(m.expiry) }}</span>
-              <span>{{ m.lastVisit }}</span>
+              <a class="member-name" [routerLink]="['/members', m.id]">
+                <span class="avatar" aria-hidden="true">{{ initials(m.firstName, m.lastName) }}</span>{{ m.firstName }} {{ m.lastName }}
+              </a>
+              <span>{{ m.phone ?? '—' }}</span>
+              <span class="status"><span class="status-dot" [class]="'status-dot status-dot--' + tones[m.state]"></span>{{ stateLabels[m.state] }}</span>
+              <span>{{ m.plan ?? 'Aucune' }}</span>
+              <span>{{ m.expiryDate ? frDate(m.expiryDate) : 'Aucune' }}</span>
+              <span>{{ frDate(m.joinDate) }}</span>
+              <span>{{ lastVisit(m) }}</span>
             </div>
 
             @if (openId() === m.id) {
               <div class="member-detail">
-                <div class="qr-box">
-                  <svg width="76" height="76" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                       stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="QR code de l'adhérent">
-                    <path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h2v2h-2zM19 19h2v2h-2zM15 19v2M19 15h2M12 3v4M12 11v2H9M3 12h3M12 17v4" />
-                  </svg>
-                </div>
+                <div class="qr-box"><app-qr-code [value]="m.qrToken" [size]="96" /></div>
                 <dl class="detail-list">
-                  <div><dt>Téléphone</dt><dd>{{ m.phone }}</dd></div>
-                  <div><dt>E-mail</dt><dd>{{ m.email }}</dd></div>
-                  <div><dt>Programme</dt><dd>{{ m.program }}</dd></div>
-                  <div><dt>Présences sur 30 jours</dt><dd>{{ m.visits30d }}</dd></div>
+                  <div><dt>N° de membre</dt><dd>{{ m.memberNumber }}</dd></div>
+                  <div><dt>Visites sur 30 jours</dt><dd>{{ m.visitsLast30Days }}</dd></div>
+                  <div><dt>Notes</dt><dd>{{ m.notes ?? 'Aucune' }}</dd></div>
                 </dl>
                 <div class="page-actions">
-                  <button type="button" class="btn btn-outline" (click)="openEdit(m.id)">Modifier</button>
-                  <a routerLink="/subscriptions" class="btn btn-primary">Renouveler</a>
+                  <a class="btn btn-outline" [routerLink]="['/members', m.id]">Ouvrir la fiche</a>
+                  <button type="button" class="btn btn-outline" (click)="editing.set(m)">Modifier</button>
+                  <button type="button" class="btn btn-primary" (click)="renew(m)">Renouveler</button>
                 </div>
               </div>
             }
           </div>
         } @empty {
           @if (loading()) {
-            <p class="empty">Chargement des adhérents…</p>
+            <p class="empty">Chargement des membres…</p>
           } @else if (loadError()) {
             <p class="empty">{{ loadError() }} <button type="button" class="btn btn-outline" (click)="load()">Réessayer</button></p>
           } @else {
-            <p class="empty">Aucun adhérent trouvé pour ces filtres.</p>
+            <p class="empty">Aucun membre trouvé pour ces filtres.</p>
           }
         }
       </div>
     </div>
   </div>
 
-  <div class="card-foot">{{ rows().length }} lignes chargées sur {{ totalCount() }}</div>
+  <div class="card-foot">{{ rows().length }} lignes affichées sur {{ total() }} membres</div>
 </div>
 
-<!-- ===== FAB actions rapides ===== -->
 <app-fab [actions]="fabActions" (actionTriggered)="onFabAction($event)" />
 
-<!-- ===== Pop-up ajouter / modifier ===== -->
-@if (formOpen()) {
-  <app-member-form
-    [member]="editing() ?? null"
-    (saved)="onSaved($event)"
-    (deleted)="onDeleted($event)"
-    (closed)="closeForm()"
-  />
+@if (editing() !== undefined) {
+  <app-member-form [member]="editing() ?? null" (saved)="onSaved($event)" (deleted)="onDeleted($event)" (closed)="editing.set(undefined)" />
+}
+
+@if (paying(); as p) {
+  <app-pay-dialog [member]="p" title="Renouveler l’abonnement" (paid)="onPaid($event)" (closed)="paying.set(null)" />
 }

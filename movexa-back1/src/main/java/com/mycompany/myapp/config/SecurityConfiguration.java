@@ -32,6 +32,8 @@ public class SecurityConfiguration {
                 authz
                     .requestMatchers(HttpMethod.POST, "/api/authenticate").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/authenticate").permitAll()
+                    // Webhook de l'agrégateur de paiement : pas de JWT, la signature HMAC est vérifiée dans le contrôleur
+                    .requestMatchers(HttpMethod.POST, "/api/public/payments/webhook").permitAll()
                     .requestMatchers("/api/admin/**").hasAuthority(AuthoritiesConstants.ADMIN)
                     .requestMatchers("/api/**").authenticated()
                     .requestMatchers("/v3/api-docs/**").hasAuthority(AuthoritiesConstants.ADMIN)

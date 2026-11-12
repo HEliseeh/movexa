@@ -1,12 +1,603 @@
+@charset "UTF-8";
 /* You can add global styles to this file, and also import other style files */
-@import './styles/tokens.css';
-@import './styles/base.css';
+:root {
+  color-scheme: light;
+  /* ---------- Palette brute (seul endroit où figurent les hex) ---------- */
+  --palette-navy-950: #161a29;
+  --palette-navy-900: #1e2336;
+  --palette-navy-700: #30374e;
+  --palette-navy-600: #3a4158;
+  --palette-slate-500: #5c6275;
+  --palette-slate-450: #4f5568;
+  --palette-slate-400: #6b728a;
+  --palette-slate-300: #8a8f9c;
+  --palette-slate-200: #c9ccd6;
+  --palette-slate-100: #d5d8e2;
+  --palette-sand-300: #e6cfb5;
+  --palette-sand-100: #f1e7da;
+  --palette-sand-500: #c8a47e;
+  --palette-sand-600: #a8835a;
+  --palette-sand-800: #7f6040;
+  --palette-paper-200: #efede8;
+  --palette-paper-100: #f6f3ee;
+  --palette-line-300: #ddd9d1;
+  --palette-line-200: #e8e5df;
+  --palette-white: #ffffff;
+  /* ---------- Rôles d'usage (à utiliser dans les composants) ---------- */
+  --color-bg: var(--palette-paper-200); /* fond des pages */
+  --color-bg-deep: var(--palette-navy-950); /* barre du haut */
+  --color-surface: var(--palette-white); /* cartes, tableaux */
+  --color-surface-raised: var(--palette-paper-100);
+  --color-surface-stripe: var(--palette-paper-100); /* lignes paires */
+  --color-surface-selected: var(--palette-sand-100);
+  --color-border: var(--palette-line-300);
+  --color-border-soft: var(--palette-line-200);
+  --color-input-line: var(--palette-slate-300);
+  --color-text: var(--palette-navy-900);
+  --color-text-muted: var(--palette-slate-500);
+  --color-text-soft: var(--palette-slate-450);
+  --color-link: var(--palette-sand-800);
+  --color-link-hover: var(--palette-navy-900);
+  --color-primary: var(--palette-sand-500);
+  --color-primary-hover: #d3b28f;
+  --color-primary-active: var(--palette-sand-600);
+  --color-on-primary: var(--palette-navy-900); /* texte sur un bouton sable */
+  --color-focus-ring: rgb(200 164 126 / 0.45);
+  /* Zones sombres : menu latéral, panneau de connexion, scanner */
+  --color-nav-bg: var(--palette-navy-900);
+  --color-nav-text: var(--palette-white);
+  --color-nav-divider: var(--palette-navy-600);
+  --color-nav-active-bg: var(--palette-sand-500);
+  --color-nav-active-text: var(--palette-navy-900);
+  --color-dark-panel: var(--palette-navy-900);
+  --color-dark-panel-raised: var(--palette-navy-700);
+  --color-on-dark: var(--palette-white);
+  --color-on-dark-muted: var(--palette-slate-100);
+  /* ---------- Couleurs sémantiques (pastilles de statut) ---------- */
+  --color-success: #2f8f5b;
+  --color-success-strong: #1f7a4a;
+  --color-success-bg: rgb(47 143 91 / 0.12);
+  --color-warning: #d9822b;
+  --color-warning-bg: rgb(217 130 43 / 0.12);
+  --color-danger: #c8443a;
+  --color-danger-strong: #b3352c;
+  --color-danger-bg: rgb(200 68 58 / 0.12);
+  --color-neutral: var(--palette-slate-300);
+  --color-info: #3a6ea5;
+  --color-info-bg: rgb(58 110 165 / 0.12);
+  /* Graphiques */
+  --color-chart-main: var(--palette-navy-900);
+  --color-chart-current: var(--palette-sand-600);
+  --color-chart-muted: var(--palette-slate-200);
+  --color-chart-grid: var(--palette-line-200);
+  /* ---------- Typographie ---------- */
+  --font-family-base: 'Lato', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-family-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-base: 0.9375rem; /* 15px : texte des tableaux */
+  --font-size-md: 1rem; /* 16px */
+  --font-size-lg: 1.125rem; /* 18px : titres de carte */
+  --font-size-xl: 1.5rem; /* 24px : titres de page */
+  --font-size-2xl: 1.875rem; /* 30px : KPI */
+  --font-weight-regular: 400;
+  --font-weight-medium: 700;
+  --font-weight-semibold: 700;
+  --font-weight-bold: 700;
+  --font-weight-black: 900;
+  --line-height-tight: 1.25;
+  --line-height-base: 1.5;
+  /* ---------- Espacements ---------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 3rem;
+  /* ---------- Formes ---------- */
+  --radius-sm: 4px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-full: 9999px;
+  /* ---------- Ombres ---------- */
+  --shadow-sm: 0 1px 4px rgb(30 35 54 / 0.35);
+  --shadow-md: 0 2px 5px rgb(30 35 54 / 0.35);
+  --shadow-lg: 0 3px 8px rgb(30 35 54 / 0.5);
+  /* ---------- Transitions et couches ---------- */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --z-dropdown: 100;
+  --z-modal: 1000;
+  --z-toast: 1100;
+  /* ---------- Layout ---------- */
+  --container-max-width: 1200px;
+  --sidebar-width: 240px;
+  --header-height: 64px;
+  --touch-target: 44px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-base);
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+h1, h2, h3, h4 {
+  margin: 0;
+  line-height: var(--line-height-tight);
+}
+
+a {
+  color: var(--color-link);
+}
+
+a:hover {
+  color: var(--color-link-hover);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============================================================
+   Composants visuels partagés (design MOVEXA)
+   Classes globales réutilisées par toutes les features.
+   ============================================================ */
+/* ---- Boutons ---- */
+.btn {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.btn:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  color: var(--color-on-primary);
+}
+
+.btn-outline {
+  background: var(--color-surface);
+  border-color: var(--color-text);
+  color: var(--color-text);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.btn-outline.is-done {
+  background: var(--color-bg);
+}
+
+.btn-sm {
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.btn-lg {
+  min-height: 48px;
+  font-size: var(--font-size-md);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* ---- En-tête de page ---- */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-5) 104px;
+}
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.page-title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  line-height: 30px;
+  font-weight: var(--font-weight-black);
+}
+
+.page-subtitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 20px;
+  color: var(--color-text-muted);
+}
+
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Page « pleine » : contenu blanc collé au menu (listes) */
+.page-sheet {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  padding-bottom: 104px;
+}
+
+.sheet-header {
+  padding: 14px var(--space-5);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sheet-header--tabs {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  padding-bottom: 0;
+}
+
+/* ---- Onglets soulignés ---- */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tab {
+  min-height: var(--touch-target);
+  padding: 0 14px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-regular);
+  cursor: pointer;
+}
+
+.tab[aria-selected=true] {
+  border-bottom-color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+/* ---- Cartes ---- */
+.card {
+  min-width: 0;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  padding: var(--space-5);
+}
+
+.card--flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+.card-head {
+  padding: var(--space-4) var(--space-5) 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.card-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  line-height: 24px;
+  font-weight: var(--font-weight-bold);
+}
+
+.card-foot {
+  padding: 14px var(--space-5);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border);
+}
+
+/* ---- Champs de formulaire (ligne soulignée) ---- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.field-label,
+.field > label,
+.field > legend {
+  padding: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.input-line {
+  height: var(--touch-target);
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-input-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-md);
+}
+
+.input-line:focus {
+  outline: none;
+  border-bottom-color: var(--color-text);
+  box-shadow: 0 1px 0 0 var(--color-text);
+}
+
+.input-line.invalid {
+  border-bottom-color: var(--color-danger);
+}
+
+/* Version compacte pour les filtres dans les en-têtes de tableau */
+.input-line--filter {
+  height: 36px;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+}
+
+.textarea-box {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--color-input-line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-md);
+  resize: vertical;
+}
+
+.field-error {
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+}
+
+.checkbox-label {
+  min-height: var(--touch-target);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.checkbox-label input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-text);
+}
+
+/* ---- Pastilles de statut ---- */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.status-dot {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-neutral);
+}
+
+.status-dot--success {
+  background: var(--color-success);
+}
+
+.status-dot--warning {
+  background: var(--color-warning);
+}
+
+.status-dot--danger {
+  background: var(--color-danger);
+}
+
+.status-dot--neutral {
+  background: var(--color-neutral);
+}
+
+/* ---- Tableaux en grille (lignes zébrées) ---- */
+.grid-scroll {
+  overflow-x: auto;
+}
+
+.grid-row {
+  display: grid;
+  gap: var(--space-4);
+  padding: 6px var(--space-5);
+  align-items: center;
+  font-size: var(--font-size-base);
+  line-height: 22px;
+}
+
+.grid-row--head {
+  padding: 12px var(--space-5);
+  align-items: end;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.grid-row--roomy {
+  padding-top: 13px;
+  padding-bottom: 13px;
+}
+
+.grid-row:not(.grid-row--head):nth-of-type(even),
+.stripe:nth-of-type(even) {
+  background: var(--color-surface-stripe);
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-strong {
+  font-weight: var(--font-weight-bold);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.sort-btn {
+  width: 28px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ---- Interrupteur ---- */
+.switch {
+  width: 56px;
+  height: var(--touch-target);
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.switch-track {
+  width: 52px;
+  height: 28px;
+  padding: 3px;
+  border-radius: 14px;
+  background: #7a8091;
+  display: flex;
+  justify-content: flex-start;
+  transition: background var(--transition-fast);
+}
+
+.switch[aria-pressed=true] .switch-track {
+  background: var(--color-text);
+  justify-content: flex-end;
+}
+
+.switch-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-surface);
+}
+
+/* ---- Panneau latéral (formulaire d'ajout) ---- */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(30, 35, 54, 0.55);
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: calc(var(--z-modal) + 1);
+  width: 100%;
+  max-width: 420px;
+  padding: var(--space-6);
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  overflow-y: auto;
+}
+
+.drawer-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: var(--font-weight-black);
+}
+
+.drawer-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.drawer-actions .btn {
+  flex: 1 1 0;
+  min-height: 48px;
+}
 
 /* ============================================================
    Classes de badges globales — utilisées via [ngClass] dans
    le composant DataTable (ViewEncapsulation boundary bypass)
    ============================================================ */
-
 /* Statut adhérent */
 .badge-actif {
   background: var(--color-success-bg);
@@ -48,4 +639,6 @@
   border-color: var(--color-danger) !important;
 }
 
-html, body { height: 100%; }
+html, body {
+  height: 100%;
+}/*# sourceMappingURL=styles.css.map */

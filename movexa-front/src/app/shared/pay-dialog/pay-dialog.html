@@ -1,0 +1,113 @@
+<div class="modal-backdrop" (keydown.escape)="close()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pd-title">
+    <header class="modal-head">
+      <div class="modal-head-text">
+        <h2 id="pd-title" class="modal-title">{{ result() ? (result()!.status === 'PENDING' ? 'Lien de paiement créé' : 'Paiement enregistré') : title() }}</h2>
+        @if (selected(); as m) {
+          <p class="modal-subtitle">{{ m.firstName }} {{ m.lastName }} · N° {{ m.memberNumber }} · {{ stateText(m.state, m.endDate, m.daysLeft) }}</p>
+        }
+      </div>
+      <button type="button" class="modal-close" aria-label="Fermer" (click)="close()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+    </header>
+
+    @if (result(); as p) {
+      <!-- ===== Après l'enregistrement ===== -->
+      <div class="modal-body">
+        @if (p.status === 'PENDING') {
+          <div class="alert alert--warning" role="status">
+            Lien de {{ fcfa(p.amount) }} prêt. L’abonnement sera prolongé dès que l’agrégateur confirmera le paiement.
+          </div>
+          <div class="pd-share">
+            <a class="btn btn-primary" [href]="whatsapp(p)" target="_blank" rel="noopener">Envoyer par WhatsApp</a>
+            <a class="btn btn-outline" [href]="sms(p)">Envoyer par SMS</a>
+          </div>
+        } @else {
+          <div class="alert alert--success" role="status">
+            {{ p.planName }} payé : {{ fcfa(p.amount) }} en {{ methodLabels[p.method].toLowerCase() }}.
+            Valable du {{ frDate(p.validFrom) }} au {{ frDate(p.validTo) }}. Reçu {{ p.receiptNumber }}.
+          </div>
+          <div class="pd-share">
+            <a class="btn btn-primary" [href]="whatsapp(p)" target="_blank" rel="noopener">Envoyer le reçu par WhatsApp</a>
+            <a class="btn btn-outline" [routerLink]="['/receipts', p.id]" (click)="close()">Voir le reçu</a>
+          </div>
+        }
+      </div>
+      <footer class="modal-foot">
+        <button type="button" class="btn btn-primary" (click)="close()">Terminer</button>
+      </footer>
+    } @else {
+      <!-- ===== Formulaire ===== -->
+      <div class="modal-body">
+        @if (error(); as e) {
+          <div class="alert alert--error" role="alert">{{ e }}</div>
+        }
+
+        @if (!selected()) {
+          <div class="field">
+            <label for="pd-q">Membre</label>
+            <input id="pd-q" class="input-line" type="search" autocomplete="off" placeholder="Nom ou téléphone"
+                   [ngModel]="query()" (ngModelChange)="query.set($event)" />
+          </div>
+          <div class="pd-results">
+            @for (m of results(); track m.id) {
+              <button type="button" class="pd-result" (click)="pickMember(m)">
+                <span class="status-dot" [class]="'status-dot status-dot--' + tones[m.state]"></span>
+                <span class="text-strong">{{ m.firstName }} {{ m.lastName }}</span>
+                <span class="pd-muted">{{ m.phone }} · {{ stateText(m.state, m.endDate, m.daysLeft) }}</span>
+              </button>
+            } @empty {
+              @if (query().trim().length >= 2) { <p class="help">Aucun membre trouvé.</p> }
+            }
+          </div>
+        } @else {
+          @if (!member()) {
+            <button type="button" class="link-btn pd-change" (click)="selected.set(null)">Changer de membre</button>
+          }
+
+          <div class="field">
+            <label for="pd-plan">Formule</label>
+            <select id="pd-plan" class="input-line" [ngModel]="planId()" (ngModelChange)="pickPlan(+$event)">
+              @for (p of plans(); track p.id) {
+                <option [ngValue]="p.id">{{ p.name }}, {{ fcfa(p.price) }}</option>
+              }
+            </select>
+            @if (periodText()) { <span class="help">{{ periodText() }}</span> }
+          </div>
+
+          <fieldset class="pd-fieldset">
+            <legend class="field-label">Moyen de paiement</legend>
+            <div class="choices">
+              @for (m of methods(); track m.id) {
+                <button type="button" class="choice" [attr.aria-pressed]="method() === m.id" [disabled]="!m.enabled"
+                        [title]="m.enabled ? '' : (m.id === 'PAYMENT_LINK' ? 'À configurer dans Paramètres > Paiements' : 'Désactivé dans les paramètres')"
+                        (click)="method.set(m.id)">{{ m.label }}</button>
+              }
+            </div>
+          </fieldset>
+
+          <div class="pd-grid">
+            <div class="field">
+              <label for="pd-amount">Montant (FCFA)</label>
+              <input id="pd-amount" class="input-line" type="number" min="0" step="500" inputmode="numeric"
+                     [ngModel]="amount()" (ngModelChange)="amount.set($event)" />
+              @if (plan() && amount() !== plan()!.price) { <span class="help">Tarif spécial (prix habituel {{ fcfa(plan()!.price) }})</span> }
+            </div>
+            @if (method() === 'MTN_MOMO' || method() === 'MOOV_MONEY') {
+              <div class="field">
+                <label for="pd-ref">Référence de la transaction</label>
+                <input id="pd-ref" class="input-line" autocomplete="off" placeholder="Facultatif" maxlength="100"
+                       [ngModel]="reference()" (ngModelChange)="reference.set($event)" />
+              </div>
+            }
+          </div>
+        }
+      </div>
+      <footer class="modal-foot">
+        <button type="button" class="btn btn-outline" [disabled]="saving()" (click)="close()">Annuler</button>
+        <button type="button" class="btn btn-primary" [disabled]="saving() || !selected() || !plan()" (click)="submit()">{{ submitLabel() }}</button>
+      </footer>
+    }
+  </div>
+</div>

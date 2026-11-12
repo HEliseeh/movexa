@@ -1,3 +1,4 @@
+@charset "UTF-8";
 *,
 *::before,
 *::after {
@@ -47,7 +48,6 @@ a:hover {
    Composants visuels partagés (design MOVEXA)
    Classes globales réutilisées par toutes les features.
    ============================================================ */
-
 /* ---- Boutons ---- */
 .btn {
   min-height: var(--touch-target);
@@ -193,7 +193,7 @@ a:hover {
   cursor: pointer;
 }
 
-.tab[aria-selected='true'] {
+.tab[aria-selected=true] {
   border-bottom-color: var(--color-primary);
   font-weight: var(--font-weight-bold);
 }
@@ -327,10 +327,21 @@ a:hover {
   background: var(--color-neutral);
 }
 
-.status-dot--success { background: var(--color-success); }
-.status-dot--warning { background: var(--color-warning); }
-.status-dot--danger  { background: var(--color-danger); }
-.status-dot--neutral { background: var(--color-neutral); }
+.status-dot--success {
+  background: var(--color-success);
+}
+
+.status-dot--warning {
+  background: var(--color-warning);
+}
+
+.status-dot--danger {
+  background: var(--color-danger);
+}
+
+.status-dot--neutral {
+  background: var(--color-neutral);
+}
 
 /* ---- Tableaux en grille (lignes zébrées) ---- */
 .grid-scroll {
@@ -364,9 +375,17 @@ a:hover {
   background: var(--color-surface-stripe);
 }
 
-.text-right { text-align: right; }
-.text-strong { font-weight: var(--font-weight-bold); }
-.nowrap { white-space: nowrap; }
+.text-right {
+  text-align: right;
+}
+
+.text-strong {
+  font-weight: var(--font-weight-bold);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
 
 .sort-btn {
   width: 28px;
@@ -403,7 +422,7 @@ a:hover {
   transition: background var(--transition-fast);
 }
 
-.switch[aria-pressed='true'] .switch-track {
+.switch[aria-pressed=true] .switch-track {
   background: var(--color-text);
   justify-content: flex-end;
 }
@@ -420,7 +439,7 @@ a:hover {
   position: fixed;
   inset: 0;
   z-index: var(--z-modal);
-  background: rgb(30 35 54 / 0.55);
+  background: rgba(30, 35, 54, 0.55);
 }
 
 .drawer {
@@ -455,4 +474,4 @@ a:hover {
 .drawer-actions .btn {
   flex: 1 1 0;
   min-height: 48px;
-}
+}/*# sourceMappingURL=base.css.map */

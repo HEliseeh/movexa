@@ -1,0 +1,129 @@
+<div class="page">
+  <nav class="breadcrumb" aria-label="Fil d'Ariane"><a routerLink="/members">Membres</a> / {{ member() ? member()!.firstName + ' ' + member()!.lastName : '…' }}</nav>
+
+  @if (error(); as e) {
+    <div class="alert alert--error" role="alert">{{ e }}</div>
+  }
+
+  @if (member(); as m) {
+    <!-- ===== EN-TÊTE ===== -->
+    <section class="card md-head">
+      <span class="avatar avatar--lg" aria-hidden="true">{{ initials(m.firstName, m.lastName) }}</span>
+      <div class="md-head-text">
+        <h1 class="page-title">{{ m.firstName }} {{ m.lastName }}</h1>
+        <p class="page-subtitle">{{ m.phone }} · N° {{ m.memberNumber }} · inscrit le {{ frDate(m.joinDate) }}</p>
+        <span class="state-pill" [class]="'state-pill state-pill--' + tones[m.state]"><span class="status-dot" [class]="'status-dot status-dot--' + tones[m.state]"></span>{{ statusText() }}</span>
+      </div>
+      <div class="page-actions">
+        <button type="button" class="btn btn-primary" (click)="paying.set(true)">Renouveler</button>
+        <a class="btn btn-outline" [href]="reminderLink(m)" target="_blank" rel="noopener">Envoyer un rappel</a>
+        <button type="button" class="btn btn-outline" (click)="editing.set(true)">Modifier</button>
+      </div>
+    </section>
+
+    <div class="md-columns">
+      <div class="md-main">
+        <!-- ===== ABONNEMENT EN COURS ===== -->
+        <section class="card md-period">
+          <div class="md-period-head">
+            <h2 class="card-title">Abonnement en cours</h2>
+            @if (period(); as p) { <span class="text-strong">{{ p.planName }} · {{ fcfa(p.price) }}</span> }
+          </div>
+          @if (period(); as p) {
+            <div class="bar" aria-hidden="true"><span [style.width.%]="p.pct" [class]="'bar-fill--' + tones[m.state]"></span></div>
+            <div class="md-period-dates"><span>Début {{ frDate(p.startDate) }}</span><span>{{ p.remaining }}</span><span>Fin {{ frDate(p.endDate) }}</span></div>
+          } @else {
+            <p class="help">Aucun abonnement en cours. Utilisez « Renouveler » pour encaisser une formule.</p>
+          }
+        </section>
+
+        <!-- ===== HISTORIQUE ===== -->
+        <section class="card card--flush">
+          <div class="tabs md-tabs" role="tablist" aria-label="Historique">
+            <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'pay'" (click)="tab.set('pay')">Paiements</button>
+            <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'visits'" (click)="tab.set('visits')">Visites</button>
+            <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'reminders'" (click)="tab.set('reminders')">Rappels envoyés</button>
+          </div>
+
+          @if (tab() === 'pay') {
+            @for (p of data()!.payments; track p.id) {
+              <div class="follow-row md-pay" [class.md-pay--cancelled]="p.status === 'CANCELLED'">
+                <div class="follow-main">
+                  <div class="text-strong md-pay-title">{{ p.planName }} · {{ fcfa(p.amount) }}</div>
+                  <div class="follow-detail">{{ paymentDetail(p) }}</div>
+                </div>
+                <span class="status nowrap">
+                  <span class="status-dot" [class.status-dot--success]="p.status === 'PAID'" [class.status-dot--warning]="p.status === 'PENDING'"></span>
+                  {{ p.status === 'PAID' ? 'Payé' : p.status === 'PENDING' ? 'Lien envoyé, en attente' : 'Annulé' }}
+                </span>
+                @if (p.status === 'PAID') {
+                  <a [routerLink]="['/receipts', p.id]" class="nowrap">Reçu {{ p.receiptNumber }}</a>
+                  @if (store.isManager()) {
+                    <button type="button" class="link-btn" (click)="cancelling.set(p)">Annuler</button>
+                  }
+                }
+              </div>
+            } @empty {
+              <p class="empty">Aucun paiement enregistré.</p>
+            }
+          }
+
+          @if (tab() === 'visits') {
+            <div class="md-visits">
+              <p><strong>{{ m.visitsLast30Days }} visite{{ m.visitsLast30Days > 1 ? 's' : '' }}</strong> sur les 30 derniers jours.</p>
+              <div class="md-visit-grid">
+                @for (d of visitGrid(); track d.day) {
+                  <span [class.came]="d.came" [title]="d.label"></span>
+                }
+              </div>
+              <div class="md-legend"><span><span class="came"></span>Venu</span><span><span></span>Absent</span></div>
+            </div>
+          }
+
+          @if (tab() === 'reminders') {
+            @for (r of data()!.reminders; track r.id) {
+              <div class="follow-row">
+                <div class="follow-main">
+                  <span class="text-strong">{{ ruleLabels[r.rule] }}</span> · {{ r.channel === 'SMS' ? 'SMS' : 'WhatsApp' }} · {{ dayHour(r.sentAt) }}
+                </div>
+                <span class="follow-detail">{{ r.outcomeText }}</span>
+              </div>
+            } @empty {
+              <p class="empty">Aucun rappel envoyé.</p>
+            }
+          }
+        </section>
+      </div>
+
+      <!-- ===== QR CODE ===== -->
+      <aside class="md-side">
+        <section class="card md-qr">
+          <h2 class="card-title">QR code d’accès</h2>
+          <app-qr-code [value]="m.qrToken" [size]="200" [label]="'QR code de ' + m.firstName + ' ' + m.lastName" />
+          <p class="help">À présenter à l’accueil. Enregistrez l’image puis joignez-la au message WhatsApp.</p>
+          <div class="md-qr-actions">
+            <button type="button" class="btn btn-outline" (click)="downloadQr(m)">Enregistrer l’image</button>
+            <a class="btn btn-primary" [href]="qrLink(m)" target="_blank" rel="noopener">Envoyer par WhatsApp</a>
+          </div>
+        </section>
+        <section class="card">
+          <h2 class="card-title">Notes</h2>
+          <p class="md-notes">{{ m.notes ?? 'Aucune note.' }}</p>
+          @if (m.email) { <p class="help">E-mail : {{ m.email }}</p> }
+        </section>
+      </aside>
+    </div>
+  } @else if (!error()) {
+    <p class="empty">Chargement de la fiche…</p>
+  }
+</div>
+
+@if (paying() && lite()) {
+  <app-pay-dialog [member]="lite()" title="Renouveler l’abonnement" (paid)="onPaid($event)" (closed)="paying.set(false)" />
+}
+@if (editing() && member()) {
+  <app-member-form [member]="member()" (saved)="onSaved()" (deleted)="load()" (closed)="editing.set(false)" />
+}
+@if (cancelling(); as p) {
+  <app-cancel-payment [payment]="p" (done)="onCancelled($event)" (cancelled)="cancelling.set(null)" />
+}

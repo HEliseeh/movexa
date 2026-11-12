@@ -1,98 +1,331 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, DestroyRef, ElementRef, inject, OnDestroy, OnInit, signal, viewChild } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
+import { CheckIn, CheckInMethod, CheckInResult, MemberLite, Payment, SubscriptionState } from '@core/api/api.models';
+import { MovexaApi } from '@core/api/movexa-api.service';
+import { OfflineService } from '@core/offline/offline.service';
+import { ToastService } from '@core/notifications/toast.service';
+import { apiError, clientId, frDate, hour, STATE_TONES, todayIso } from '@shared/format';
+import { PayDialog } from '@shared/pay-dialog/pay-dialog';
 
-export type ResultFilter = 'all' | 'ok' | 'ko';
-
-export interface AccessLog {
+/** Une ligne du journal du jour (venue du serveur ou en attente de synchronisation) */
+interface JournalRow {
+  key: string;
   time: string;
   name: string;
-  plan: string;
-  method: 'QR' | 'Manuel';
-  result: string;
-  allowed: boolean;
+  method: CheckInMethod;
+  result: CheckInResult;
+  pending: boolean;
 }
 
-/** Résultat d'un scan affiché dans le panneau de gauche */
-export interface ScanResult {
-  allowed: boolean;
-  title: string;
+/** Ce qu'affiche le grand bloc de réponse */
+interface Answer {
+  result: CheckInResult;
+  member: MemberLite;
   text: string;
+  pending: boolean;
 }
 
-interface DemoPerson extends ScanResult {
-  name: string;
-  plan: string;
-  result: string;
-}
+const RESULT_LABELS: Record<CheckInResult, string> = {
+  ALLOWED: 'Autorisé',
+  ALLOWED_EXPIRING: 'Autorisé, expire bientôt',
+  REFUSED: 'Refusé',
+};
 
-// ---- Données mockées (à remplacer par le flux du lecteur QR) ----
-const DEMO: DemoPerson[] = [
-  { name: 'Awa Diallo', plan: 'Trimestriel', allowed: true, result: 'Autorisé', title: 'Accès autorisé', text: 'Awa Diallo, abonnement valable jusqu’au 14/11/2026.' },
-  { name: 'Inès Benali', plan: 'Mensuel Illimité', allowed: true, result: 'Autorisé, expire bientôt', title: 'Accès autorisé', text: 'Inès Benali, son abonnement expire dans 2 jours.' },
-  { name: 'Camille Roux', plan: 'Mensuel Illimité', allowed: false, result: 'Refusé, impayé', title: 'Accès refusé', text: 'Camille Roux, 30 000 FCFA impayés depuis 6 jours.' },
-  { name: 'Yacine Haddad', plan: 'Mensuel Essentiel', allowed: false, result: 'Refusé, expiré', title: 'Accès refusé', text: 'Yacine Haddad, abonnement expiré le 07/11/2026.' },
-];
-
-const LOGS: AccessLog[] = [
-  { time: '18:09', name: 'Thomas Lefèvre', plan: 'Annuel', method: 'QR', result: 'Autorisé', allowed: true },
-  { time: '18:07', name: 'Sarah Nguyen', plan: 'Mensuel Illimité', method: 'QR', result: 'Autorisé', allowed: true },
-  { time: '18:04', name: 'Yacine Haddad', plan: 'Mensuel Essentiel', method: 'QR', result: 'Refusé, expiré', allowed: false },
-  { time: '18:01', name: 'Léa Moreau', plan: 'Séance à la carte', method: 'Manuel', result: 'Autorisé', allowed: true },
-  { time: '17:56', name: 'Julien Petit', plan: 'Mensuel Essentiel', method: 'QR', result: 'Autorisé, expire bientôt', allowed: true },
-  { time: '17:53', name: 'Mamadou Sow', plan: 'Mensuel Illimité', method: 'QR', result: 'Autorisé', allowed: true },
-  { time: '17:49', name: 'Koffi Mensah', plan: 'Mensuel Illimité', method: 'QR', result: 'Autorisé, expire bientôt', allowed: true },
-];
-
-/** Compteurs du jour avant les passages simulés */
-const BASE_PRESENT = 47;
-const BASE_ENTRIES = 186;
-const BASE_REFUSED = 3;
-
+/**
+ * Pointage à l'entrée (module 4) : scanner le QR code avec la caméra du téléphone, ou chercher
+ * par nom ou téléphone. Réponse immédiate vert / orange / rouge, et encaissement direct.
+ * Fonctionne hors ligne grâce à la copie locale des membres (OfflineService).
+ */
 @Component({
   selector: 'app-access',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, PayDialog],
   templateUrl: './access.html',
   styleUrl: './access.css',
 })
-export class Access {
-  readonly demo = DEMO;
+export class Access implements OnInit, OnDestroy {
+  private readonly api = inject(MovexaApi);
+  private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+  readonly offline = inject(OfflineService);
 
+  readonly tones = STATE_TONES;
+  readonly resultLabels = RESULT_LABELS;
+  readonly frDate = frDate;
+
+  readonly mode = signal<'scan' | 'search'>('scan');
   readonly query = signal('');
-  readonly filter = signal<ResultFilter>('all');
-  readonly lastScan = signal<ScanResult | null>(null);
-  private readonly added = signal<AccessLog[]>([]);
+  readonly matches = signal<MemberLite[]>([]);
+  readonly scanInput = signal('');
+  readonly answer = signal<Answer | null>(null);
+  readonly busy = signal(false);
+  readonly error = signal<string | null>(null);
+  readonly journal = signal<JournalRow[]>([]);
+  readonly paying = signal<MemberLite | null>(null);
+  readonly waitingLink = signal<Payment | null>(null);
 
-  private readonly allLogs = computed(() => [...this.added(), ...LOGS]);
+  // ---- Caméra ----
+  readonly cameraOn = signal(false);
+  readonly cameraError = signal<string | null>(null);
+  private readonly video = viewChild<ElementRef<HTMLVideoElement>>('video');
+  private stream: MediaStream | null = null;
+  private timer: ReturnType<typeof setInterval> | null = null;
+  private lastToken = '';
+  private lastTokenAt = 0;
+  private threshold = 7;
 
-  readonly rows = computed(() => {
-    const q = this.query().trim().toLowerCase();
-    const f = this.filter();
-    return this.allLogs().filter(
-      r => (!q || r.name.toLowerCase().includes(q)) && (f === 'all' || (f === 'ok') === r.allowed),
-    );
+  readonly rows = computed<JournalRow[]>(() => {
+    const pending = this.offline.pending().map(p => ({
+      key: p.clientId,
+      time: hour(p.checkedAt),
+      name: p.memberName,
+      method: p.method,
+      result: 'ALLOWED' as CheckInResult,
+      pending: true,
+    }));
+    return [...pending.reverse(), ...this.journal()];
   });
 
-  private readonly addedAllowed = computed(() => this.added().filter(r => r.allowed).length);
-  readonly present = computed(() => BASE_PRESENT + this.addedAllowed());
-  readonly entries = computed(() => BASE_ENTRIES + this.addedAllowed());
-  readonly refused = computed(() => BASE_REFUSED + this.added().length - this.addedAllowed());
-  readonly totalPassages = computed(() => LOGS.length + 182 + this.added().length);
+  readonly entries = computed(() => this.rows().filter(r => r.result !== 'REFUSED').length);
+  readonly refused = computed(() => this.rows().filter(r => r.result === 'REFUSED').length);
 
-  /** Simule la lecture d'un QR code (en attendant le vrai lecteur) */
-  simulate(p: DemoPerson): void {
-    const time = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date());
-    this.lastScan.set(p);
-    this.added.update(list => [{ time, name: p.name, plan: p.plan, method: 'QR', result: p.result, allowed: p.allowed }, ...list]);
+  constructor() {
+    // Recherche : sur le serveur en ligne, dans la copie locale hors ligne
+    toObservable(this.query)
+      .pipe(
+        debounceTime(200),
+        distinctUntilChanged(),
+        switchMap(q => {
+          const text = q.trim();
+          if (text.length < 2) return of([] as MemberLite[]);
+          return this.offline.online() ? this.api.searchMembers(text, 6) : of(this.searchCache(text));
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe(list => this.matches.set(list));
   }
 
-  resetFilters(): void {
+  ngOnInit(): void {
+    if (this.offline.online()) {
+      this.offline.refreshCache();
+      void this.offline.sync();
+    }
+    this.api.settings().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(s => (this.threshold = s.expiringSoonDays));
+    this.loadJournal();
+    // Arrivée depuis l'accueil (« Pointer ») : /access?member=12
+    const memberId = Number(this.route.snapshot.queryParamMap.get('member'));
+    if (memberId) {
+      this.mode.set('search');
+      this.checkIn({ memberId }, 'SEARCH');
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.stopCamera();
+  }
+
+  loadJournal(): void {
+    this.api
+      .checkInsToday()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: list => this.journal.set(list.map(c => this.toRow(c))),
+        error: () => {
+          /* hors ligne : on garde le journal affiché */
+        },
+      });
+  }
+
+  setMode(mode: 'scan' | 'search'): void {
+    this.mode.set(mode);
+    if (mode === 'search') this.stopCamera();
+  }
+
+  pick(m: MemberLite): void {
     this.query.set('');
-    this.filter.set('all');
+    this.matches.set([]);
+    this.checkIn({ memberId: m.id }, 'SEARCH', m);
   }
 
-  tone(r: AccessLog): string {
-    if (!r.allowed) return 'danger';
-    return r.result === 'Autorisé' ? 'success' : 'warning';
+  /** Code saisi au clavier ou par une douchette USB / Bluetooth (qui « tape » le contenu du QR) */
+  submitCode(): void {
+    const token = this.scanInput().trim();
+    if (!token) return;
+    this.scanInput.set('');
+    this.checkIn({ qrToken: token }, 'QR');
+  }
+
+  /**
+   * Pointe un membre. En ligne : le serveur décide et enregistre.
+   * Hors ligne : décision locale avec la copie des membres, et mise en file d'attente.
+   */
+  checkIn(target: { memberId?: number; qrToken?: string }, method: CheckInMethod, known?: MemberLite): void {
+    this.error.set(null);
+    this.waitingLink.set(null);
+    if (!this.offline.online()) {
+      this.checkInOffline(target, method, known);
+      return;
+    }
+    this.busy.set(true);
+    this.api
+      .checkIn({ ...target, method, clientId: clientId() })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: c => {
+          this.busy.set(false);
+          this.answer.set({ result: c.result, member: this.liteFrom(c), text: this.answerText(c.result, c.memberName, c.endDate), pending: false });
+          this.journal.update(list => [this.toRow(c), ...list]);
+        },
+        error: (err: HttpErrorResponse) => {
+          this.busy.set(false);
+          if (err.status === 0) {
+            this.offline.online.set(false);
+            this.checkInOffline(target, method, known);
+          } else {
+            this.answer.set(null);
+            this.error.set(apiError(err, 'Pointage impossible.'));
+          }
+        },
+      });
+  }
+
+  /** Encaisser depuis l'écran orange ou rouge */
+  openPay(): void {
+    const a = this.answer();
+    if (a) this.paying.set(a.member);
+  }
+
+  /** Après paiement : l'écran passe au vert et l'entrée est enregistrée */
+  onPaid(p: Payment): void {
+    this.paying.set(null);
+    if (p.status === 'PENDING') {
+      this.waitingLink.set(p);
+      return;
+    }
+    this.toast.success(`Paiement enregistré, reçu ${p.receiptNumber}.`);
+    this.checkIn({ memberId: p.memberId }, 'SEARCH');
+  }
+
+  // ---- Caméra (jsQR chargé à la demande pour ne pas alourdir le reste de l'application) ----
+
+  async startCamera(): Promise<void> {
+    this.cameraError.set(null);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      this.cameraError.set('Ce navigateur ne donne pas accès à la caméra (il faut une adresse en https ou localhost).');
+      return;
+    }
+    try {
+      this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+      this.cameraOn.set(true);
+      // Le <video> n'existe qu'une fois cameraOn passé à vrai
+      setTimeout(() => {
+        const video = this.video()?.nativeElement;
+        if (!video || !this.stream) return;
+        video.srcObject = this.stream;
+        void video.play();
+      });
+      const { default: jsQR } = await import('jsqr');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      this.timer = setInterval(() => {
+        const video = this.video()?.nativeElement;
+        if (!video || !ctx || video.readyState < 2) return;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height, { inversionAttempts: 'dontInvert' });
+        if (code?.data) this.onScanned(code.data);
+      }, 250);
+    } catch {
+      this.cameraError.set('Caméra refusée ou indisponible. Autorisez la caméra, ou utilisez la recherche par nom.');
+      this.stopCamera();
+    }
+  }
+
+  stopCamera(): void {
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
+    this.stream?.getTracks().forEach(t => t.stop());
+    this.stream = null;
+    this.cameraOn.set(false);
+  }
+
+  private onScanned(token: string): void {
+    // Le même QR reste devant la caméra : on ne le pointe qu'une fois toutes les 5 secondes
+    const now = Date.now();
+    if (token === this.lastToken && now - this.lastTokenAt < 5000) return;
+    this.lastToken = token;
+    this.lastTokenAt = now;
+    navigator.vibrate?.(80);
+    this.checkIn({ qrToken: token }, 'QR');
+  }
+
+  // ---- Hors ligne ----
+
+  private checkInOffline(target: { memberId?: number; qrToken?: string }, method: CheckInMethod, known?: MemberLite): void {
+    const m = known ?? (target.qrToken ? this.offline.findCachedByQr(target.qrToken) : this.offline.cachedMembers().find(x => x.id === target.memberId));
+    if (!m) {
+      this.error.set('Hors ligne : membre absent de la copie locale. Cherchez-le par son nom, ou attendez le retour du réseau.');
+      return;
+    }
+    const state = this.stateOf(m.endDate);
+    const result: CheckInResult = state === 'ACTIVE' ? 'ALLOWED' : state === 'EXPIRING_SOON' ? 'ALLOWED_EXPIRING' : 'REFUSED';
+    const name = `${m.firstName} ${m.lastName}`;
+    if (result !== 'REFUSED') {
+      this.offline.enqueue({ clientId: clientId(), memberId: m.id, method, checkedAt: new Date().toISOString(), memberName: name });
+    }
+    this.answer.set({ result, member: { ...m, state }, text: this.answerText(result, name, m.endDate), pending: result !== 'REFUSED' });
+  }
+
+  private stateOf(endDate: string | null): SubscriptionState {
+    if (!endDate) return 'NONE';
+    const today = todayIso();
+    if (endDate < today) return 'EXPIRED';
+    const days = (Date.parse(endDate) - Date.parse(today)) / 86_400_000;
+    return days <= this.threshold ? 'EXPIRING_SOON' : 'ACTIVE';
+  }
+
+  private searchCache(text: string): MemberLite[] {
+    const q = text.toLowerCase();
+    const digits = q.replace(/\D/g, '');
+    return this.offline
+      .cachedMembers()
+      .filter(m => `${m.firstName} ${m.lastName}`.toLowerCase().includes(q) || (digits.length >= 2 && (m.phone ?? '').replace(/\D/g, '').includes(digits)))
+      .slice(0, 6);
+  }
+
+  private answerText(result: CheckInResult, name: string, endDate: string | null): string {
+    switch (result) {
+      case 'ALLOWED':
+        return `${name}, valide jusqu’au ${frDate(endDate)}. Entrée enregistrée à ${hour(new Date().toISOString())}.`;
+      case 'ALLOWED_EXPIRING':
+        return `${name}, fin le ${frDate(endDate)}. Entrée enregistrée. Proposez le renouvellement.`;
+      default:
+        return endDate ? `${name}, abonnement expiré le ${frDate(endDate)}.` : `${name} n’a pas d’abonnement en cours.`;
+    }
+  }
+
+  private liteFrom(c: CheckIn): MemberLite {
+    const [firstName, ...rest] = c.memberName.split(' ');
+    return {
+      id: c.memberId,
+      memberNumber: c.memberNumber,
+      firstName,
+      lastName: rest.join(' '),
+      phone: c.memberPhone,
+      planName: c.planName,
+      endDate: c.endDate,
+      state: c.state,
+      daysLeft: c.daysLeft,
+      qrToken: '',
+    };
+  }
+
+  private toRow(c: CheckIn): JournalRow {
+    return { key: String(c.id), time: hour(c.checkedAt), name: c.memberName, method: c.method, result: c.result, pending: false };
   }
 }

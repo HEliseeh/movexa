@@ -1,66 +1,80 @@
-/* ================================================================
-   PARAMÈTRES — salle, équipe, paiements, relances
-   ================================================================ */
-
-.gym-form {
-  max-width: 720px;
-  padding: var(--space-6) var(--space-5);
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: var(--space-5) 32px;
-}
-
-.form-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.saved,
-.method-detail {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-soft);
-}
-
-.team-toolbar {
-  justify-content: flex-end;
-}
-
-.team-grid {
-  min-width: 780px;
-}
-
-.team-grid .grid-row {
-  grid-template-columns: 1.5fr 1fr 1.3fr 1fr 1fr 96px;
-}
-
-.payments-settings {
-  max-width: 720px;
-  padding: var(--space-6) var(--space-5);
+.st-body {
+  padding: var(--space-5);
+  max-width: 980px;
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
 }
 
-.section-title {
-  margin-bottom: var(--space-2);
+.st-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
-.method {
-  padding: 10px 0;
+.st-section p {
+  margin: 0;
+}
+
+.st-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px 28px;
+}
+
+.st-wide {
+  max-width: 560px;
+}
+
+.st-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  border-top: 1px solid var(--color-border-soft);
-  font-size: var(--font-size-base);
-  line-height: 22px;
+  max-width: 560px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-border-soft);
 }
 
-.rules-grid {
-  min-width: 760px;
+.st-users .grid-row,
+.st-perms .grid-row {
+  padding-left: 0;
+  padding-right: 0;
 }
 
-.rules-grid .grid-row {
-  grid-template-columns: 2fr 1fr 80px 80px 120px;
+.st-users .grid-row {
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+}
+
+.st-perms .grid-row {
+  grid-template-columns: 2fr 1fr;
+  max-width: 640px;
+}
+
+.st-rules .grid-row {
+  grid-template-columns: 1.6fr 1fr 80px 100px;
+  max-width: 680px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.st-check {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--color-text);
+}
+
+.st-run {
+  align-self: flex-start;
+}
+
+.st-save {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.st-saved {
+  color: var(--color-success-strong);
+  font-weight: var(--font-weight-bold);
 }
