@@ -69,6 +69,11 @@ public class User implements Serializable {
     @Column(name = "phone", length = 20)
     private String phone;
 
+    /** Chiffres seuls du téléphone, calculés automatiquement : recherche et détection des doublons. */
+    @Size(max = 20)
+    @Column(name = "phone_digits", length = 20)
+    private String phoneDigits;
+
     @Column(name = "date_of_creation", nullable = false, updatable = false)
     private Instant dateOfCreation;
 
@@ -78,6 +83,12 @@ public class User implements Serializable {
         if (dateOfCreation == null) {
             dateOfCreation = Instant.now();
         }
+        onSave();
+    }
+
+    @PreUpdate
+    void onSave() {
+        phoneDigits = phone == null ? null : phone.replaceAll("\\D", "");
     }
 
     @Override

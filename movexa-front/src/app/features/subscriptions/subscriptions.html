@@ -1,109 +1,98 @@
 <div class="page-sheet">
-
   <header class="sheet-header sheet-header--tabs">
-    <h1 class="page-title">Abonnements</h1>
-    <div class="tabs" role="tablist" aria-label="Sections des abonnements">
-      @for (t of tabs; track t.id) {
-        <button type="button" role="tab" class="tab" [attr.aria-selected]="tab() === t.id" (click)="tab.set(t.id)">{{ t.label }}</button>
-      }
+    <div class="sb-top">
+      <h1 class="page-title">Abonnements et échéances</h1>
+      <span class="help">
+        « Expire bientôt » = {{ threshold() }} jours ou moins avant la fin.
+        @if (store.isManager()) { <a routerLink="/settings">Modifier le seuil</a> }
+      </span>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Listes">
+      <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'week'" (click)="tab.set('week')">À renouveler ({{ expiring().length }})</button>
+      <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'expired'" (click)="tab.set('expired')">Expirés ({{ expired().length }})</button>
+      <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'all'" (click)="tab.set('all')">Tous</button>
+      <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'plans'" (click)="tab.set('plans')">Formules</button>
     </div>
   </header>
 
-  @switch (tab()) {
-
-    <!-- ===== Abonnements en cours ===== -->
-    @case ('current') {
-      <div class="sheet-header">
-        <button type="button" class="btn btn-primary" (click)="resetFilters()">Réinitialiser tous les filtres</button>
-        <button type="button" class="btn btn-primary">Exporter les données</button>
-      </div>
-      <div class="grid-scroll">
-        <div class="subs-grid">
-          <div class="grid-row grid-row--head">
-            <input class="input-line input-line--filter" aria-label="Filtrer par adhérent" placeholder="Adhérent"
-                   [ngModel]="query()" (ngModelChange)="query.set($event)" />
-            <span>Formule</span><span>Début</span><span>Échéance</span><span>Reconduction</span>
-            <select class="input-line input-line--filter" aria-label="Filtrer par statut"
-                    [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
-              <option value="">Statut</option>
-              @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
-            </select>
-            <div class="text-right">
-              <div class="total-label">Total</div>
-              <div class="total-value">{{ fcfa(subscriptionsTotal()) }}</div>
-            </div>
-            <span></span>
-          </div>
-          <div>
-            @for (a of subscriptions(); track a.member) {
-              <div class="grid-row">
-                <span class="text-strong">{{ a.member }}</span>
-                <span>{{ a.plan }}</span>
-                <span>{{ a.start }}</span>
-                <span>{{ a.end }}</span>
-                <span>{{ a.renewal }}</span>
-                <span class="status"><span class="status-dot" [class]="'status-dot status-dot--' + tone(a.status)"></span>{{ a.status }}</span>
-                <span class="text-right nowrap">{{ fcfa(a.price) }}</span>
-                <button type="button" class="btn btn-outline btn-sm" [class.is-done]="sent().has(a.member)"
-                        [disabled]="sent().has(a.member)" (click)="remind(a.member)">
-                  {{ sent().has(a.member) ? 'Envoyée' : 'Relancer' }}
-                </button>
-              </div>
-            }
-          </div>
+  @if (tab() !== 'plans') {
+    <div class="grid-scroll">
+      <div class="sb-grid">
+        <div class="grid-row grid-row--head">
+          <input class="input-line input-line--filter" aria-label="Filtrer par membre" placeholder="Membre" [ngModel]="query()" (ngModelChange)="query.set($event)" />
+          <span>Formule</span><span>Début</span><span>Fin</span><span>Statut</span>
+          <span class="text-right">À encaisser<br /><span class="sb-total">{{ fcfa(toCollect()) }}</span></span>
+          <span></span>
         </div>
-      </div>
-      <div class="card-foot">{{ subscriptions().length }} lignes chargées sur 412</div>
-    }
-
-    <!-- ===== Formules ===== -->
-    @case ('plans') {
-      <div class="plans-grid">
-        @for (f of plans; track f.name) {
-          <article class="plan-card">
-            <h2 class="card-title">{{ f.name }}</h2>
-            <div><span class="plan-price">{{ f.price }}</span> <span class="plan-period">{{ f.period }}</span></div>
-            <p class="plan-detail">{{ f.detail }}</p>
-            <div class="plan-foot">
-              <span>{{ f.usage }}</span>
-              <button type="button" class="btn btn-outline btn-sm">Modifier</button>
-            </div>
-          </article>
+        @for (m of rows(); track m.id) {
+          <div class="grid-row">
+            <a class="text-strong sb-name" [routerLink]="['/members', m.id]">{{ m.firstName }} {{ m.lastName }}</a>
+            <span>{{ m.plan ?? 'Aucune' }}</span>
+            <span>{{ m.expiryDate ? frDate(m.subscriptionStartDate) : '—' }}</span>
+            <span>{{ frDate(m.expiryDate) }}</span>
+            <span class="status"><span class="status-dot" [class]="'status-dot status-dot--' + tones[m.state]"></span>{{ stateLabels[m.state] }}{{ when(m) ? ', ' + when(m) : '' }}</span>
+            <span class="text-right">{{ fcfa(priceOf(m)) }}</span>
+            <span class="sb-actions">
+              <button type="button" class="btn btn-primary btn-sm" (click)="renew(m)">Renouveler</button>
+              @if (m.state !== 'ACTIVE') { <a class="btn btn-outline btn-sm" [href]="reminder(m)" target="_blank" rel="noopener">Rappel WhatsApp</a> }
+            </span>
+          </div>
+        } @empty {
+          <p class="empty">Aucun abonnement dans cette liste.</p>
         }
       </div>
-    }
-
-    <!-- ===== Paiements et reçus ===== -->
-    @case ('payments') {
-      <div class="grid-scroll">
-        <div class="payments-grid">
-          <div class="grid-row grid-row--head">
-            <span>Reçu</span><span>Date</span><span>Adhérent</span><span>Objet</span><span>Moyen</span><span>Statut</span>
-            <div class="text-right">
-              <div class="total-label">Total</div>
-              <div class="total-value">{{ fcfa(paymentsTotal) }}</div>
-            </div>
-            <span></span>
+    </div>
+    <p class="help sb-note">{{ rows().length }} lignes. Le renouvellement prolonge à partir de la date de fin si l’abonnement est encore actif, sinon à partir d’aujourd’hui.</p>
+  } @else {
+    <div class="sb-plans">
+      @for (p of plans(); track p.id) {
+        <article class="sb-plan" [class.sb-plan--off]="!p.active">
+          <h2 class="card-title">{{ p.name }}</h2>
+          <div class="sb-price">{{ fcfa(p.price) }}</div>
+          <p class="help">{{ durationText(p.durationDays) }}{{ p.active ? '' : ' · désactivée' }}</p>
+          <div class="sb-plan-foot">
+            <span class="help">{{ p.memberCount ?? 0 }} membre{{ (p.memberCount ?? 0) > 1 ? 's' : '' }}</span>
+            @if (store.isManager()) { <button type="button" class="btn btn-outline btn-sm" (click)="editPlan(p)">Modifier</button> }
           </div>
-          <div>
-            @for (p of payments; track p.receipt) {
-              <div class="grid-row grid-row--roomy">
-                <span>{{ p.receipt }}</span>
-                <span>{{ p.date }}</span>
-                <span class="text-strong">{{ p.member }}</span>
-                <span>{{ p.item }}</span>
-                <span>{{ p.method }}</span>
-                <span class="status"><span class="status-dot" [class]="'status-dot status-dot--' + tone(p.status)"></span>{{ p.status }}</span>
-                <span class="text-right nowrap">{{ fcfa(p.price) }}</span>
-                <a href="#" class="text-right text-strong" (click)="$event.preventDefault()">PDF</a>
-              </div>
-            }
-          </div>
-        </div>
-      </div>
-      <div class="card-foot">{{ payments.length }} lignes chargées</div>
-    }
+        </article>
+      }
+      @if (store.isManager()) {
+        <button type="button" class="sb-plan sb-plan--new" (click)="editPlan()">+ Créer une formule</button>
+      }
+    </div>
+    <p class="help sb-note">Seul le gérant crée ou modifie une formule. Une formule n’est jamais supprimée (elle figure dans l’historique) : désactivez-la pour ne plus la proposer.</p>
   }
 </div>
 
-<app-fab [actions]="fabActions" (actionTriggered)="onFabAction($event)" />
+@if (paying(); as m) {
+  <app-pay-dialog [member]="m" title="Renouveler l’abonnement" (paid)="onPaid($event)" (closed)="paying.set(null)" />
+}
+
+@if (draft(); as d) {
+  <div class="modal-backdrop" (keydown.escape)="draft.set(null)">
+    <form class="modal modal--s" role="dialog" aria-modal="true" aria-labelledby="sb-plan-title" (ngSubmit)="savePlan()">
+      <header class="modal-head"><div class="modal-head-text"><h2 id="sb-plan-title" class="modal-title">{{ d.id ? 'Modifier la formule' : 'Nouvelle formule' }}</h2></div></header>
+      <div class="modal-body">
+        @if (planError(); as e) { <div class="alert alert--error" role="alert">{{ e }}</div> }
+        <div class="field">
+          <label for="sb-name">Nom</label>
+          <input id="sb-name" name="name" class="input-line" maxlength="100" [ngModel]="d.name" (ngModelChange)="updateDraft({ name: $event })" />
+        </div>
+        <div class="field">
+          <label for="sb-price">Prix (FCFA)</label>
+          <input id="sb-price" name="price" class="input-line" type="number" min="0" step="500" [ngModel]="d.price" (ngModelChange)="updateDraft({ price: $event })" />
+        </div>
+        <div class="field">
+          <label for="sb-days">Durée en jours</label>
+          <input id="sb-days" name="days" class="input-line" type="number" min="0" [ngModel]="d.durationDays" (ngModelChange)="updateDraft({ durationDays: $event })" />
+          <span class="help">0 = séance unique (valable le jour même). Mois = 30, trimestre = 90, année = 365.</span>
+        </div>
+        <label class="checkbox-label"><input type="checkbox" name="active" [ngModel]="d.active" (ngModelChange)="updateDraft({ active: $event })" /> Proposée à la vente</label>
+      </div>
+      <footer class="modal-foot">
+        <button type="button" class="btn btn-outline" (click)="draft.set(null)">Annuler</button>
+        <button type="submit" class="btn btn-primary" [disabled]="savingPlan()">{{ savingPlan() ? 'Enregistrement…' : 'Enregistrer' }}</button>
+      </footer>
+    </form>
+  </div>
+}

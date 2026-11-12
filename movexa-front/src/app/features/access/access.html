@@ -1,99 +1,137 @@
 <div class="page">
-
-  <header>
-    <h1 class="page-title">Contrôle d'accès</h1>
-    <p class="page-subtitle">
-      {{ present() }} personnes dans la salle · {{ entries() }} entrées aujourd'hui · {{ refused() }} accès refusés
-    </p>
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Pointage</h1>
+      <p class="page-subtitle">{{ entries() }} entrées aujourd’hui · {{ refused() }} refusées</p>
+    </div>
   </header>
 
-  <div class="access-row">
+  @if (!offline.online()) {
+    <div class="alert alert--warning" role="status">
+      Hors ligne : les entrées sont enregistrées sur cet appareil ({{ offline.pending().length }} en attente) et seront envoyées au retour du réseau.
+      Les paiements attendront aussi le retour du réseau.
+    </div>
+  } @else if (offline.pending().length) {
+    <div class="alert alert--warning" role="status">
+      {{ offline.pending().length }} entrée(s) en attente d’envoi.
+      <button type="button" class="link-btn" (click)="offline.sync()">Envoyer maintenant</button>
+    </div>
+  }
 
-    <!-- ===== Scanner ===== -->
-    <section class="card scanner">
-      <h2 class="card-title">Scanner un QR code</h2>
-
-      <div class="scanner-frame" aria-hidden="true">
-        <span class="corner corner--tl"></span>
-        <span class="corner corner--tr"></span>
-        <span class="corner corner--bl"></span>
-        <span class="corner corner--br"></span>
-        <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
-             stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h2v2h-2zM19 19h2v2h-2zM15 19v2M19 15h2M12 3v4M12 11v2H9M3 12h3M12 17v4" />
-        </svg>
+  <div class="ac-row">
+    <!-- ===== IDENTIFIER LE MEMBRE ===== -->
+    <section class="card ac-identify">
+      <div class="segmented ac-modes" role="tablist" aria-label="Mode de pointage">
+        <button type="button" role="tab" [attr.aria-selected]="mode() === 'scan'" (click)="setMode('scan')">Scanner le QR</button>
+        <button type="button" role="tab" [attr.aria-selected]="mode() === 'search'" (click)="setMode('search')">Chercher un membre</button>
       </div>
 
-      <div
-        class="scan-result"
-        [class.scan-result--ok]="lastScan()?.allowed === true"
-        [class.scan-result--ko]="lastScan()?.allowed === false"
-        aria-live="polite"
-      >
-        <div class="scan-title">{{ lastScan()?.title ?? 'En attente' }}</div>
-        <div>{{ lastScan()?.text ?? 'Présentez le QR code de l’adhérent devant la caméra.' }}</div>
-      </div>
-
-      @if (lastScan()?.allowed === false) {
-        <a routerLink="/reception" class="btn btn-primary">Régulariser à l'accueil</a>
-      }
-
-      <div class="simulate">
-        <div class="text-strong simulate-title">Simuler un passage</div>
-        <div class="simulate-grid">
-          @for (p of demo; track p.name) {
-            <button type="button" class="simulate-btn" (click)="simulate(p)">{{ p.name }}</button>
+      @if (mode() === 'scan') {
+        <div class="ac-scanner">
+          @if (cameraOn()) {
+            <video #video class="ac-video" playsinline muted aria-label="Aperçu de la caméra"></video>
+            <span class="ac-frame" aria-hidden="true"></span>
+          } @else {
+            <svg width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 8V4h5M16 3h5v5M21 16v5h-5M8 21H3v-5M8 8h3v3H8zM14 8h2v2h-2zM8 14h2v2H8zM13 13h3v3h-3z" />
+            </svg>
           }
         </div>
-      </div>
+        @if (cameraError(); as e) { <p class="error-text">{{ e }}</p> }
+        <div class="ac-scan-actions">
+          @if (cameraOn()) {
+            <span class="help">Placez le QR code du membre devant la caméra.</span>
+            <button type="button" class="btn btn-outline" (click)="stopCamera()">Arrêter la caméra</button>
+          } @else {
+            <button type="button" class="btn btn-primary btn-lg" (click)="startCamera()">Activer la caméra</button>
+          }
+        </div>
+        <form class="ac-code" (ngSubmit)="submitCode()">
+          <label for="ac-code" class="field-label">Ou code lu par une douchette</label>
+          <div class="ac-code-row">
+            <input id="ac-code" name="code" class="input-line" autocomplete="off" [ngModel]="scanInput()" (ngModelChange)="scanInput.set($event)" />
+            <button type="submit" class="btn btn-outline">Valider</button>
+          </div>
+        </form>
+      } @else {
+        <div class="field">
+          <label for="ac-q">Nom ou téléphone</label>
+          <input id="ac-q" class="input-line" type="search" autocomplete="off" placeholder="Ex. Haddad ou 96 08"
+                 [ngModel]="query()" (ngModelChange)="query.set($event)" />
+        </div>
+        <div class="ac-matches">
+          @for (m of matches(); track m.id) {
+            <button type="button" class="ac-match" (click)="pick(m)">
+              <span class="status-dot" [class]="'status-dot status-dot--' + tones[m.state]"></span>
+              <span class="text-strong">{{ m.firstName }} {{ m.lastName }}</span>
+              <span class="help">{{ m.phone }}</span>
+            </button>
+          } @empty {
+            @if (query().trim().length >= 2) { <p class="help">Aucun membre trouvé.</p> }
+          }
+        </div>
+      }
     </section>
 
-    <!-- ===== Journal des passages ===== -->
-    <section class="card card--flush journal">
-      <div class="sheet-header">
-        <button type="button" class="btn btn-primary" (click)="resetFilters()">Réinitialiser les filtres</button>
-        <button type="button" class="btn btn-outline">Saisie manuelle</button>
-      </div>
-
-      <div class="grid-scroll">
-        <div class="journal-grid">
-          <div class="grid-row grid-row--head">
-            <span>Heure</span>
-            <input
-              class="input-line input-line--filter"
-              aria-label="Filtrer par adhérent"
-              placeholder="Adhérent"
-              [ngModel]="query()"
-              (ngModelChange)="query.set($event)"
-            />
-            <span>Formule</span>
-            <span>Moyen</span>
-            <select
-              class="input-line input-line--filter"
-              aria-label="Filtrer par résultat"
-              [ngModel]="filter()"
-              (ngModelChange)="filter.set($event)"
-            >
-              <option value="all">Résultat : tous</option>
-              <option value="ok">Autorisés</option>
-              <option value="ko">Refusés</option>
-            </select>
+    <!-- ===== RÉPONSE ===== -->
+    <section class="ac-answer-col" aria-live="polite">
+      @if (error(); as e) {
+        <div class="ac-answer ac-answer--error" role="alert"><div class="ac-answer-title">Pointage impossible</div><div>{{ e }}</div></div>
+      } @else if (waitingLink(); as p) {
+        <div class="ac-answer ac-answer--wait">
+          <div class="ac-answer-title">Paiement en attente</div>
+          <div>Lien de paiement de {{ p.amount }} FCFA envoyé au {{ p.memberPhone }}. Pointez à nouveau dès la confirmation.</div>
+        </div>
+      } @else if (answer(); as a) {
+        <div class="ac-answer" [class]="'ac-answer ac-answer--' + a.result">
+          <div class="ac-answer-title">
+            {{ a.result === 'ALLOWED' ? 'Accès autorisé' : a.result === 'ALLOWED_EXPIRING' ? 'Accès autorisé, expire bientôt' : 'Accès refusé' }}
           </div>
-          <div>
-            @for (r of rows(); track $index) {
-              <div class="grid-row">
-                <span>{{ r.time }}</span>
-                <span>{{ r.name }}</span>
-                <span>{{ r.plan }}</span>
-                <span>{{ r.method }}</span>
-                <span class="status"><span class="status-dot" [class]="'status-dot status-dot--' + tone(r)"></span>{{ r.result }}</span>
-              </div>
+          <div>{{ a.text }}</div>
+          @if (a.pending) { <div class="ac-answer-note">Enregistré sur l’appareil, envoi au retour du réseau.</div> }
+          <div class="ac-answer-actions">
+            @if (a.result !== 'ALLOWED') {
+              <button type="button" class="btn ac-answer-btn" [disabled]="!offline.online()" (click)="openPay()">
+                {{ a.result === 'REFUSED' ? 'Encaisser' : 'Renouveler maintenant' }}
+              </button>
             }
+            <a class="btn ac-answer-link" [routerLink]="['/members', a.member.id]">Fiche</a>
           </div>
         </div>
-      </div>
-      <div class="card-foot">{{ rows().length }} lignes affichées sur {{ totalPassages() }} passages aujourd'hui</div>
+      } @else {
+        <div class="ac-answer ac-answer--idle">
+          <div class="ac-answer-title">{{ busy() ? 'Vérification…' : 'En attente' }}</div>
+          <div>Scannez un QR code ou cherchez un membre : la réponse s’affiche ici.</div>
+        </div>
+      }
     </section>
-
   </div>
+
+  <!-- ===== JOURNAL DU JOUR ===== -->
+  <section class="card card--flush">
+    <div class="card-head"><h2 class="card-title">Entrées du jour</h2></div>
+    <div class="grid-scroll">
+      <div class="ac-journal">
+        <div class="grid-row grid-row--head"><span>Heure</span><span>Membre</span><span>Moyen</span><span>Résultat</span><span>Envoi</span></div>
+        @for (r of rows(); track r.key) {
+          <div class="grid-row">
+            <span>{{ r.time }}</span>
+            <span class="text-strong">{{ r.name }}</span>
+            <span>{{ r.method === 'QR' ? 'QR' : 'Recherche' }}</span>
+            <span class="status">
+              <span class="status-dot" [class.status-dot--success]="r.result === 'ALLOWED'" [class.status-dot--warning]="r.result === 'ALLOWED_EXPIRING'" [class.status-dot--danger]="r.result === 'REFUSED'"></span>
+              {{ resultLabels[r.result] }}
+            </span>
+            <span [class.ac-pending]="r.pending">{{ r.pending ? 'En attente' : 'Synchronisé' }}</span>
+          </div>
+        } @empty {
+          <p class="empty">Aucune entrée pour l’instant.</p>
+        }
+      </div>
+    </div>
+  </section>
 </div>
+
+@if (paying(); as m) {
+  <app-pay-dialog [member]="m" [title]="m.state === 'EXPIRED' || m.state === 'NONE' ? 'Encaisser' : 'Renouveler l’abonnement'" (paid)="onPaid($event)" (closed)="paying.set(null)" />
+}

@@ -1,0 +1,43 @@
+<div class="page rc-page">
+  <nav class="help" aria-label="Fil d'Ariane"><a routerLink="/payments">Encaissements</a> / Reçu</nav>
+
+  @if (error(); as e) {
+    <div class="alert alert--error" role="alert">{{ e }}</div>
+  }
+
+  @if (receipt(); as r) {
+    <article class="receipt print-area" aria-labelledby="rc-title">
+      <div class="receipt-head">
+        <span class="receipt-gym">{{ r.gymName || '[Nom de la salle]' }}</span>
+        <span class="receipt-gym-sub">{{ r.gymAddress || '' }}{{ r.gymAddress && r.gymPhone ? ' · ' : '' }}{{ r.gymPhone || '' }}</span>
+      </div>
+      <div class="receipt-body">
+        <div class="receipt-title-row">
+          <div>
+            <h1 id="rc-title" class="receipt-title">Reçu de paiement</h1>
+            <p class="receipt-meta">N° {{ r.number }} · {{ dayHour(r.paidAt) }}</p>
+          </div>
+          <span class="receipt-stamp" [class.receipt-stamp--cancelled]="r.status === 'CANCELLED'">{{ r.status === 'CANCELLED' ? 'ANNULÉ' : 'PAYÉ' }}</span>
+        </div>
+        <div class="receipt-amount">
+          <div class="receipt-meta">Montant</div>
+          <div class="receipt-amount-value">{{ fcfa(r.amount) }}</div>
+        </div>
+        <dl class="receipt-lines">
+          <dt>Membre</dt><dd class="text-strong">{{ r.memberName }} ({{ r.memberNumber }})</dd>
+          <dt>Formule</dt><dd>{{ r.planName }}</dd>
+          <dt>Valable</dt><dd>du {{ frDate(r.validFrom) }} au {{ frDate(r.validTo) }}</dd>
+          <dt>Moyen</dt><dd>{{ methodLabels[r.method] }}</dd>
+          <dt>Encaissé par</dt><dd>{{ r.agent }}</dd>
+          @if (r.cancelReason) { <dt>Motif d’annulation</dt><dd>{{ r.cancelReason }}</dd> }
+        </dl>
+        <p class="receipt-footer">{{ r.footer || '' }} Reçu généré avec MOVEXA.</p>
+      </div>
+    </article>
+
+    <div class="receipt-actions">
+      <a class="btn btn-primary" [href]="whatsapp(r)" target="_blank" rel="noopener">Envoyer par WhatsApp</a>
+      <button type="button" class="btn btn-outline" (click)="print()">Imprimer</button>
+    </div>
+  }
+</div>

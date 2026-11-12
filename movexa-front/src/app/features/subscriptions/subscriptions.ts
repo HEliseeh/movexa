@@ -1,140 +1,154 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Fab, FabAction } from '@shared/fab/fab';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { MemberLite, Payment, Plan } from '@core/api/api.models';
+import { MemberDto, MembersService } from '@core/api/members.service';
+import { MovexaApi } from '@core/api/movexa-api.service';
+import { CurrentUserStore } from '@core/auth/current-user.store';
+import { ToastService } from '@core/notifications/toast.service';
+import { apiError, fcfa, frDate, STATE_LABELS, STATE_TONES, whatsappLink } from '@shared/format';
+import { PayDialog } from '@shared/pay-dialog/pay-dialog';
 
-export type SubscriptionTab = 'current' | 'plans' | 'payments';
-export type SubscriptionStatus = 'Actif' | 'Expire bientôt' | 'Impayé' | 'Expiré';
-export type PaymentStatus = 'Payé' | 'En attente' | 'Échoué';
+type Tab = 'week' | 'expired' | 'all' | 'plans';
 
-export interface Subscription {
-  member: string;
-  plan: string;
-  start: string;
-  end: string;
-  renewal: 'Manuelle' | 'Automatique';
-  status: SubscriptionStatus;
-  price: number;
-}
-
-export interface Plan {
+/** Formule en cours d'édition (pop-up) */
+interface PlanDraft {
+  id?: number;
   name: string;
-  price: string;
-  period: string;
-  detail: string;
-  usage: string;
+  price: number | null;
+  durationDays: number | null;
+  active: boolean;
 }
 
-export interface Payment {
-  receipt: string;
-  date: string;
-  member: string;
-  item: string;
-  method: string;
-  status: PaymentStatus;
-  price: number;
-}
-
-const TONES: Record<SubscriptionStatus | PaymentStatus, string> = {
-  'Actif': 'success',
-  'Expire bientôt': 'warning',
-  'Impayé': 'danger',
-  'Expiré': 'danger',
-  'Payé': 'success',
-  'En attente': 'warning',
-  'Échoué': 'danger',
-};
-
-function formatFcfa(n: number): string {
-  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
-}
-
-// ---- Données mockées (à remplacer par de vrais appels API) ----
-const SUBSCRIPTIONS: Subscription[] = [
-  { member: 'Inès Benali', plan: 'Mensuel Illimité', start: '11/10/2026', end: '11/11/2026', renewal: 'Manuelle', status: 'Expire bientôt', price: 30000 },
-  { member: 'Camille Roux', plan: 'Mensuel Illimité', start: '03/10/2026', end: '03/11/2026', renewal: 'Manuelle', status: 'Impayé', price: 30000 },
-  { member: 'Awa Diallo', plan: 'Trimestriel', start: '14/08/2026', end: '14/11/2026', renewal: 'Automatique', status: 'Actif', price: 75000 },
-  { member: 'Koffi Mensah', plan: 'Mensuel Illimité', start: '15/10/2026', end: '15/11/2026', renewal: 'Manuelle', status: 'Expire bientôt', price: 30000 },
-  { member: 'Thomas Lefèvre', plan: 'Annuel', start: '30/06/2026', end: '30/06/2027', renewal: 'Automatique', status: 'Actif', price: 270000 },
-  { member: 'Yacine Haddad', plan: 'Mensuel Essentiel', start: '07/10/2026', end: '07/11/2026', renewal: 'Manuelle', status: 'Expiré', price: 20000 },
-  { member: 'Sarah Nguyen', plan: 'Mensuel Illimité', start: '02/11/2026', end: '02/12/2026', renewal: 'Automatique', status: 'Actif', price: 30000 },
-  { member: 'Julien Petit', plan: 'Mensuel Essentiel', start: '12/10/2026', end: '12/11/2026', renewal: 'Manuelle', status: 'Expire bientôt', price: 20000 },
-];
-
-const PLANS: Plan[] = [
-  { name: 'Mensuel Essentiel', price: '20 000 FCFA', period: 'par mois', detail: 'Accès à la salle aux heures creuses.', usage: '96 adhérents' },
-  { name: 'Mensuel Illimité', price: '30 000 FCFA', period: 'par mois', detail: 'Accès illimité à la salle et aux cours.', usage: '184 adhérents' },
-  { name: 'Trimestriel', price: '75 000 FCFA', period: 'par trimestre', detail: 'Accès illimité pendant 3 mois.', usage: '87 adhérents' },
-  { name: 'Annuel', price: '270 000 FCFA', period: 'par an', detail: 'Accès illimité pendant 12 mois.', usage: '45 adhérents' },
-  { name: 'Séance à la carte', price: '3 000 FCFA', period: 'la séance', detail: 'Accès unique, sans engagement.', usage: '31 ventes ce mois-ci' },
-];
-
-const PAYMENTS: Payment[] = [
-  { receipt: 'REC-2026-00482', date: '09/11/2026', member: 'Thomas Lefèvre', item: 'Mensualité', method: 'Carte', status: 'Payé', price: 20000 },
-  { receipt: 'REC-2026-00481', date: '09/11/2026', member: 'Sarah Nguyen', item: 'Mensuel Illimité', method: 'MoMo', status: 'Payé', price: 30000 },
-  { receipt: 'REC-2026-00480', date: '09/11/2026', member: 'Léa Moreau', item: 'Séance à la carte', method: 'Espèces', status: 'Payé', price: 3000 },
-  { receipt: 'REC-2026-00479', date: '09/11/2026', member: 'Awa Diallo', item: 'Trimestriel', method: 'MoMo', status: 'En attente', price: 75000 },
-  { receipt: 'REC-2026-00478', date: '08/11/2026', member: 'Julien Petit', item: 'Mensuel Essentiel', method: 'Carte', status: 'Payé', price: 20000 },
-  { receipt: 'REC-2026-00477', date: '08/11/2026', member: 'Mamadou Sow', item: 'Mensuel Illimité', method: 'Espèces', status: 'Payé', price: 30000 },
-  { receipt: 'REC-2026-00476', date: '06/11/2026', member: 'Camille Roux', item: 'Mensuel Illimité', method: 'MoMo', status: 'Échoué', price: 30000 },
-  { receipt: 'REC-2026-00475', date: '05/11/2026', member: 'Koffi Mensah', item: 'Mensuel Illimité', method: 'MoMo', status: 'Payé', price: 30000 },
-];
-
+/**
+ * Abonnements et échéances (module 2) : qui doit renouveler, qui a expiré, et le catalogue des
+ * formules (prix en FCFA). Seul le gérant crée ou modifie une formule.
+ */
 @Component({
   selector: 'app-subscriptions',
-  imports: [FormsModule, Fab],
+  imports: [FormsModule, RouterLink, PayDialog],
   templateUrl: './subscriptions.html',
   styleUrl: './subscriptions.css',
 })
-export class Subscriptions {
-  readonly fcfa = formatFcfa;
+export class Subscriptions implements OnInit {
+  private readonly members = inject(MembersService);
+  private readonly api = inject(MovexaApi);
+  private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+  readonly store = inject(CurrentUserStore);
 
-  readonly tabs: { id: SubscriptionTab; label: string }[] = [
-    { id: 'current', label: 'Abonnements en cours' },
-    { id: 'plans', label: 'Formules' },
-    { id: 'payments', label: 'Paiements et reçus' },
-  ];
-  readonly tab = signal<SubscriptionTab>('current');
+  readonly fcfa = fcfa;
+  readonly frDate = frDate;
+  readonly stateLabels = STATE_LABELS;
+  readonly tones = STATE_TONES;
 
-  readonly statuses: SubscriptionStatus[] = ['Actif', 'Expire bientôt', 'Impayé', 'Expiré'];
-  readonly plans = PLANS;
-  readonly payments = PAYMENTS;
-
-  // ---- Abonnements en cours ----
+  readonly tab = signal<Tab>('week');
   readonly query = signal('');
-  readonly statusFilter = signal('');
-  readonly sent = signal<ReadonlySet<string>>(new Set());
+  readonly all = signal<MemberDto[]>([]);
+  readonly plans = signal<Plan[]>([]);
+  readonly threshold = signal(7);
+  readonly paying = signal<MemberLite | null>(null);
+  readonly draft = signal<PlanDraft | null>(null);
+  readonly savingPlan = signal(false);
+  readonly planError = signal<string | null>(null);
+  private gymName = 'la salle';
 
-  readonly subscriptions = computed(() => {
+  private readonly prices = computed(() => new Map(this.plans().map(p => [p.name, p.price])));
+
+  readonly expiring = computed(() => this.all().filter(m => m.state === 'EXPIRING_SOON').sort((a, b) => (a.expiryDate ?? '').localeCompare(b.expiryDate ?? '')));
+  readonly expired = computed(() => this.all().filter(m => m.state === 'EXPIRED').sort((a, b) => (b.expiryDate ?? '').localeCompare(a.expiryDate ?? '')));
+
+  readonly rows = computed(() => {
+    const base = this.tab() === 'week' ? this.expiring() : this.tab() === 'expired' ? this.expired() : this.all();
     const q = this.query().trim().toLowerCase();
-    const s = this.statusFilter();
-    return SUBSCRIPTIONS.filter(a => (!q || a.member.toLowerCase().includes(q)) && (!s || a.status === s));
+    return q ? base.filter(m => `${m.firstName} ${m.lastName}`.toLowerCase().includes(q)) : base;
   });
 
-  readonly subscriptionsTotal = computed(() => this.subscriptions().reduce((t, a) => t + a.price, 0));
-  readonly paymentsTotal = PAYMENTS.reduce((t, p) => t + p.price, 0);
+  readonly toCollect = computed(() => this.rows().filter(m => m.state !== 'ACTIVE').reduce((t, m) => t + (this.priceOf(m) ?? 0), 0));
 
-  readonly fabActions: FabAction[] = [
-    { id: 'add-plan', label: 'Créer une formule', iconPath: 'M12 5v14M5 12h14' },
-    { id: 'add-payment', label: 'Ajouter un règlement', iconPath: 'M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2M2 10h20' },
-    { id: 'remind', label: 'Relancer les échéances', iconPath: 'M22 2L11 13M22 2l-7 20-4-9-9-4z' },
-    { id: 'download', label: 'Télécharger les reçus', iconPath: 'M12 3v12M7 10l5 5 5-5M4 21h16' },
-  ];
-
-  tone(status: SubscriptionStatus | PaymentStatus): string {
-    return TONES[status];
+  ngOnInit(): void {
+    const tab = this.route.snapshot.queryParamMap.get('tab') as Tab | null;
+    if (tab) this.tab.set(tab);
+    this.api.settings().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(s => {
+      this.threshold.set(s.expiringSoonDays);
+      this.gymName = s.name ?? 'la salle';
+    });
+    this.load();
   }
 
-  resetFilters(): void {
-    this.query.set('');
-    this.statusFilter.set('');
+  load(): void {
+    this.members.list(0, 1000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(({ members }) => this.all.set(members));
+    this.api.plans(true).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(p => this.plans.set(p));
   }
 
-  remind(member: string): void {
-    this.sent.update(s => new Set(s).add(member));
-    // TODO: appel API de relance
+  priceOf(m: MemberDto): number | null {
+    return m.plan ? (this.prices().get(m.plan) ?? null) : null;
   }
 
-  onFabAction(action: FabAction): void {
-    console.log('FAB action :', action.id);
+  when(m: MemberDto): string {
+    const d = m.daysLeft;
+    if (d === null) return '';
+    if (m.state === 'EXPIRED') return `depuis ${-d} jour${d < -1 ? 's' : ''}`;
+    if (m.state === 'EXPIRING_SOON') return d === 0 ? 'aujourd’hui' : d === 1 ? 'demain' : `dans ${d} jours`;
+    return '';
+  }
+
+  durationText(days: number): string {
+    if (days === 0) return 'Accès pour la journée';
+    if (days % 30 === 0 && days >= 30 && days < 365) return `${days} jours (${days / 30} mois)`;
+    return `${days} jours`;
+  }
+
+  renew(m: MemberDto): void {
+    this.paying.set({ id: m.id, memberNumber: m.memberNumber, firstName: m.firstName, lastName: m.lastName, phone: m.phone, planName: m.plan, endDate: m.expiryDate, state: m.state, daysLeft: m.daysLeft, qrToken: m.qrToken });
+  }
+
+  reminder(m: MemberDto): string {
+    const verb = m.state === 'EXPIRED' ? `a pris fin le ${frDate(m.expiryDate)}` : `se termine le ${frDate(m.expiryDate)}`;
+    const price = this.priceOf(m);
+    return whatsappLink(m.phone, `Bonjour ${m.firstName}, votre abonnement ${m.plan ?? ''} à ${this.gymName} ${verb}.${price ? ` Renouvellement : ${fcfa(price)}.` : ''} À bientôt !`);
+  }
+
+  onPaid(p: Payment): void {
+    this.paying.set(null);
+    this.toast.success(p.status === 'PENDING' ? 'Lien de paiement créé.' : `${p.memberName} : abonnement prolongé jusqu’au ${frDate(p.validTo)}.`);
+    this.load();
+  }
+
+  // ---- Formules (gérant) ----
+
+  editPlan(p?: Plan): void {
+    this.planError.set(null);
+    this.draft.set(p ? { id: p.id, name: p.name, price: p.price, durationDays: p.durationDays, active: p.active } : { name: '', price: null, durationDays: 30, active: true });
+  }
+
+  updateDraft(patch: Partial<PlanDraft>): void {
+    this.draft.update(d => (d ? { ...d, ...patch } : d));
+  }
+
+  savePlan(): void {
+    const d = this.draft();
+    if (!d) return;
+    if (!d.name.trim() || d.price === null || d.price < 0 || d.durationDays === null || d.durationDays < 0) {
+      this.planError.set('Indiquez un nom, un prix et une durée (0 jour = séance unique).');
+      return;
+    }
+    const payload = { name: d.name.trim(), price: d.price, durationDays: d.durationDays, active: d.active };
+    this.savingPlan.set(true);
+    const req = d.id ? this.api.updatePlan(d.id, payload) : this.api.createPlan(payload);
+    req.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.savingPlan.set(false);
+        this.draft.set(null);
+        this.toast.success('Formule enregistrée.');
+        this.load();
+      },
+      error: err => {
+        this.savingPlan.set(false);
+        this.planError.set(apiError(err, 'Enregistrement impossible.'));
+      },
+    });
   }
 }

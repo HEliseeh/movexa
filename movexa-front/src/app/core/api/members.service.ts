@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { CheckIn, Payment, PaymentMethod, Reminder, Subscription, SubscriptionState } from './api.models';
 
 /** Statuts tels que stockés côté backend (enum MemberStatus) */
 export type MemberStatusApi = 'ACTIVE' | 'UNPAID' | 'EXPIRED' | 'FROZEN';
@@ -21,37 +22,39 @@ export interface MemberDto {
   gender: Gender | null;
   notes: string | null;
   status: MemberStatusApi;
+  /** Formule en cours */
   plan: string | null;
   coach: string | null;
   program: string | null;
   subscriptionStartDate: string;
   autoRenew: boolean;
   joinDate: string;
-  /** Calculée par le serveur : date de début + durée de la formule */
+  /** Dernier jour valable de la période en cours */
   expiryDate: string | null;
   lastVisitDate: string | null;
   visitsLast30Days: number;
+  /** Calculé par le serveur à partir de la date de fin */
+  state: SubscriptionState;
+  daysLeft: number | null;
+  qrToken: string;
+  /** Paiement créé à l'inscription (reçu ou lien) */
+  payment: Payment | null;
 }
 
-/**
- * Ce que le front envoie en création / modification.
- * Les champs calculés par le serveur (numéro, échéance, âge, présences…) n'y figurent pas.
- */
+/** Ce que le front envoie en création / modification. */
 export interface MemberPayload {
   id?: number;
   firstName: string;
   lastName: string;
   phone: string;
   email: string | null;
-  birthDate: string | null;
-  gender: Gender | null;
   notes: string | null;
-  status?: MemberStatusApi;
-  plan: string;
-  coach: string | null;
-  program: string | null;
-  subscriptionStartDate: string;
-  autoRenew: boolean;
+  /** Création uniquement : formule et paiement en une seule fois */
+  planId?: number | null;
+  paymentMethod?: PaymentMethod | null;
+  planStartDate?: string | null;
+  /** Création à partir d'un prospect */
+  prospectId?: number | null;
 }
 
 export interface MemberPage {
@@ -60,15 +63,24 @@ export interface MemberPage {
   total: number;
 }
 
+/** Contenu complet de la fiche membre */
+export interface MemberOverview {
+  member: MemberDto;
+  subscriptions: Subscription[];
+  payments: Payment[];
+  visitDays: string[];
+  reminders: Reminder[];
+}
+
+export type { CheckIn };
+
 @Injectable({ providedIn: 'root' })
 export class MembersService {
   private readonly http = inject(HttpClient);
   private readonly url = `${environment.servicesUrl}/movexa-back1/api/members`;
 
-  list(page = 0, size = 100, status?: MemberStatusApi): Observable<MemberPage> {
-    let params = new HttpParams().set('page', page).set('size', size).set('sort', 'id,asc');
-    if (status) params = params.set('status', status);
-
+  list(page = 0, size = 500): Observable<MemberPage> {
+    const params = new HttpParams().set('page', page).set('size', size).set('sort', 'id,desc');
     // observe: 'response' donne accès aux en-têtes, pour lire X-Total-Count
     return this.http.get<MemberDto[]>(this.url, { params, observe: 'response' }).pipe(
       map(res => ({
@@ -82,6 +94,10 @@ export class MembersService {
     return this.http.get<MemberDto>(`${this.url}/${id}`);
   }
 
+  overview(id: number): Observable<MemberOverview> {
+    return this.http.get<MemberOverview>(`${this.url}/${id}/overview`);
+  }
+
   create(payload: MemberPayload): Observable<MemberDto> {
     return this.http.post<MemberDto>(this.url, payload);
   }
@@ -90,6 +106,7 @@ export class MembersService {
     return this.http.put<MemberDto>(`${this.url}/${id}`, { ...payload, id });
   }
 
+  /** Archive le membre (l'historique est conservé côté serveur) */
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.url}/${id}`);
   }

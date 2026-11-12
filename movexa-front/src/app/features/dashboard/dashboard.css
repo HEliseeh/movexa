@@ -1,108 +1,144 @@
 /* ================================================================
-   DASHBOARD
+   TABLEAU DE BORD (gérant)
    ================================================================ */
 
-/* ---- KPI ---- */
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-4);
-}
-
-.kpi-card {
-  padding: 18px var(--space-5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  background: var(--color-surface);
-  border-radius: var(--radius-sm);
-}
-
-.kpi-label,
-.kpi-sub {
-  font-size: var(--font-size-sm);
-  line-height: 20px;
-  color: var(--color-text-muted);
-}
-
-.kpi-value {
-  font-size: var(--font-size-2xl);
-  line-height: 38px;
-  font-weight: var(--font-weight-black);
-}
-
-/* ---- Ligne centrale ---- */
-.middle-row {
+.db-top {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
   align-items: stretch;
 }
 
-.chart-card {
-  flex: 2 1 480px;
+/* ---- Bloc « Encaissé » sur fond sombre ---- */
+.db-money {
+  flex: 1.4 1 420px;
+  min-width: 0;
+  padding: var(--space-5);
+  border-radius: var(--radius-sm);
+  background: var(--color-dark-panel);
+  color: var(--color-on-dark);
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-.reminders-card {
-  flex: 1 1 320px;
-  padding-bottom: var(--space-2);
+.db-money-title {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: #e4e6ee;
+}
+
+.db-money-total {
+  font-size: 36px;
+  line-height: 44px;
+  font-weight: var(--font-weight-black);
+}
+
+.db-money-sub {
+  font-size: var(--font-size-sm);
+  color: #c9cdd9;
+}
+
+.db-stack {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  height: 12px;
+  gap: 2px;
+  border-radius: 3px;
+  background: var(--color-dark-panel-raised);
+}
+
+.db-stack span {
+  border-radius: 3px;
+}
+
+.db-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px 20px;
+}
+
+.db-legend-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.db-swatch {
+  width: 12px;
+  height: 12px;
+  margin-top: 4px;
+  flex: 0 0 auto;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px #3a4158;
+  display: inline-block;
+}
+
+.db-legend-label {
+  font-size: var(--font-size-sm);
+  color: #e4e6ee;
+}
+
+.db-legend-value {
+  font-weight: var(--font-weight-bold);
+}
+
+.db-kpis {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
 }
 
 /* ---- Graphe ---- */
-.chart-head {
+.db-chart-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.db-chart-head {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
-  gap: var(--space-2);
+  gap: 8px;
 }
 
-.chart-readout {
-  font-size: var(--font-size-base);
-  line-height: 22px;
-  font-weight: var(--font-weight-bold);
-}
-
-.chart {
+.db-chart {
   position: relative;
-  height: 200px;
-  margin-left: 28px;
+  height: 160px;
+  margin-left: 32px;
 }
 
-.chart-gridline {
+.db-gridline {
   position: absolute;
   left: 0;
   right: 0;
   border-top: 1px solid var(--color-chart-grid);
 }
 
-.chart-gridlabel {
+.db-gridline span {
   position: absolute;
-  left: -28px;
+  left: -32px;
   top: -9px;
-  font-size: var(--font-size-xs);
-  line-height: 16px;
+  font-size: 12px;
   color: var(--color-text-muted);
 }
 
-.chart-bars {
+.db-bars {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: flex-end;
 }
 
-.chart-bar {
+.db-bar {
   flex: 1 1 0;
   min-width: 0;
-  height: 200px;
-  padding: 0 1px;
+  height: 160px;
+  padding: 0 3px;
   border: 0;
   background: none;
   display: flex;
@@ -111,99 +147,74 @@
   cursor: default;
 }
 
-.chart-bar-fill {
+.db-bar span {
   display: block;
   border-radius: 4px 4px 0 0;
+  background: var(--color-chart-main);
 }
 
-.chart-bar-fill--past    { background: var(--color-chart-main); }
-.chart-bar-fill--current { background: var(--color-chart-current); }
-.chart-bar-fill--average { background: var(--color-chart-muted); }
+.db-bar span.current,
+.db-swatch--current {
+  background: var(--color-chart-current);
+}
 
-.chart-ticks {
+.db-swatch--past {
+  background: var(--color-chart-main);
+  box-shadow: none;
+}
+
+.db-ticks {
   display: flex;
-  margin-left: 28px;
+  margin-left: 32px;
 }
 
-.chart-ticks span {
+.db-ticks span {
   flex: 1 1 0;
   min-width: 0;
   text-align: center;
-  white-space: nowrap;
-  font-size: var(--font-size-xs);
-  line-height: 16px;
+  font-size: 12px;
   color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
-.chart-legend {
+.db-chart-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-5);
+  gap: 8px 20px;
   font-size: 13px;
-  line-height: 18px;
   color: var(--color-text-muted);
 }
 
-.chart-legend > span {
+.db-chart-legend > span {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-.legend-swatch {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
+.db-chart-legend .db-swatch {
+  margin-top: 0;
 }
 
-/* ---- Relances ---- */
-.reminders-card .card-title {
-  margin-bottom: 6px;
-}
-
-.reminder-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.reminder {
+/* ---- Listes ---- */
+.db-lists {
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) 0;
-  border-top: 1px solid var(--color-border-soft);
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: flex-start;
 }
 
-.reminder .status-dot {
-  width: 12px;
-  height: 12px;
-}
-
-.reminder-info {
-  flex: 1 1 auto;
+.db-list {
+  flex: 1 1 420px;
   min-width: 0;
-  font-size: var(--font-size-base);
-  line-height: 20px;
 }
 
-.reminder-reason {
-  font-size: var(--font-size-sm);
+.db-count {
   color: var(--color-text-muted);
+  font-weight: var(--font-weight-regular);
 }
 
-/* ---- Échéances ---- */
-.expirations {
-  min-width: 680px;
-}
-
-.expirations .grid-row {
-  grid-template-columns: 2fr 1.4fr 1fr 1.2fr 1fr;
-  gap: var(--space-3);
-}
-
-.expirations .grid-row--head {
-  padding-top: 10px;
-  padding-bottom: 10px;
-  font-size: var(--font-size-sm);
+@media (max-width: 480px) {
+  .db-kpis {
+    grid-template-columns: 1fr;
+  }
 }

@@ -2,10 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1dafbd96-bccf-4a9c-a85f-2ff59c2a2a35" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/deploy/docker-compose.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/deploy/init-db.sql" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registry/central-server-config/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/registry/central-server-config/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/movexa-gateway/src/main/docker/app.yml" beforeDir="false" afterPath="$PROJECT_DIR$/movexa-gateway/src/main/docker/app.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,12 +22,12 @@
               <option name="branches">
                 <list>
                   <RecentBranch>
-                    <option name="branchName" value="main" />
-                    <option name="lastUsedInstant" value="1793635119" />
+                    <option name="branchName" value="feature/design-refonte" />
+                    <option name="lastUsedInstant" value="1794220325" />
                   </RecentBranch>
                   <RecentBranch>
-                    <option name="branchName" value="master" />
-                    <option name="lastUsedInstant" value="1793635118" />
+                    <option name="branchName" value="main" />
+                    <option name="lastUsedInstant" value="1793635119" />
                   </RecentBranch>
                 </list>
               </option>
@@ -54,19 +52,6 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$/movexa-back1" />
     <property name="nodejs_package_manager_path" value="npm" />
   </component>
-  <component name="RunManager">
-    <configuration default="true" type="ArquillianJUnit" factoryName="" nameIsGenerated="true">
-      <option name="arquillianRunConfiguration">
-        <value>
-          <option name="containerStateName" value="" />
-        </value>
-      </option>
-      <option name="TEST_OBJECT" value="class" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -83,7 +68,14 @@
       <workItem from="1793713272294" duration="5180000" />
       <workItem from="1793782005601" duration="1508000" />
       <workItem from="1793872985703" duration="634000" />
-      <workItem from="1793952167904" duration="2676000" />
+      <workItem from="1793952167904" duration="5095000" />
+      <workItem from="1794048923583" duration="3205000" />
+      <workItem from="1794214206640" duration="1188000" />
+      <workItem from="1794300525968" duration="592000" />
+      <workItem from="1794302545061" duration="924000" />
+      <workItem from="1794387765374" duration="593000" />
+      <workItem from="1794402460508" duration="592000" />
+      <workItem from="1794478354425" duration="589000" />
     </task>
     <servers />
   </component>

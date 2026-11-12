@@ -147,3 +147,35 @@ Docker Desktop doit être lancé. Sans Docker : installer PostgreSQL à la main 
 
 ### Sécurité à ne pas oublier
 Changer/supprimer `admin/admin` et `user/user`, remplacer la clé JWT, durée de token courte, HTTPS en production, contrôle d'accès **côté backend** (les guards du front ne sont pas de la sécurité).
+
+---
+
+## 11. MVP « salle de sport Bénin » (12/11/2026)
+
+Implémenté selon le document « MVP – SaaS de gestion de salle de sport » et la maquette MOVEXA (canvas claude.ai).
+
+### Backend (`movexa-back1`, migration `20261112000001_mvp_modules.xml`)
+| Module | Tables | API (`/services/movexa-back1/api/...`) |
+|---|---|---|
+| Membres | `member` (+ `qr_token`, `archived`), `app_user` (+ `phone_digits`) | `members`, `members/search`, `members/lite`, `members/by-qr/{t}`, `members/{id}/overview`, `members/import` |
+| Formules / abonnements | `plan`, `subscription` | `plans` (écriture : gérant) |
+| Encaissements | `payment`, séquence `receipt_seq`, `cash_closure` | `payments`, `payments/links`, `payments/{id}/cancel` (gérant), `payments/{id}/confirm` (gérant), `payments/{id}/receipt`, `cash`, `cash/closures`, `public/payments/webhook` (HMAC) |
+| Pointage | `check_in` (`client_id` unique = hors ligne idempotent) | `check-ins`, `check-ins/today` |
+| Relances | `reminder` | `reminders/queue`, `reminders`, `reminders/history`, `reminders/stats` |
+| Prospects | `prospect`, `prospect_event`, `prospect_outcome` (anonyme), `job_run` | `prospects`, `.../interactions`, `.../follow-ups`, `.../lost`, `prospects/decay` (gérant), `prospects/stats` ; tâche `ProspectDecayJob` à 2 h |
+| Tableau de bord, paramètres | `gym_settings` (1 ligne) | `dashboard` (gérant), `reception/today`, `settings` (écriture : gérant) |
+
+Règles clés : statut calculé depuis la date de fin (actif / expire bientôt ≤ N jours / expiré / sans abonnement) ; renouvellement à partir de la fin si encore actif, sinon d'aujourd'hui ; aucune suppression d'argent (annulation avec motif) ; « supprimer » un membre = l'archiver ; doublon = mêmes 8 derniers chiffres du téléphone.
+
+### Rôles
+- Gérant = `ROLE_ADMIN` ; réceptionniste = `ROLE_RECEPTION` (migration gateway `20261112_reception_role.xml`, en dev le compte `user/user`).
+
+### Front
+Écrans : tableau de bord, accueil, pointage (caméra via `jsqr`, hors ligne via `OfflineService`), encaissements + caisse, reçu, membres, fiche membre (QR via `qrcode`), import CSV, prospects, abonnements + formules, relances, paramètres. API dans `core/api`, composants partagés `shared/pay-dialog`, `shared/member-form`, `shared/cancel-payment`, `shared/qr-code`. `angular.json` lit maintenant `src/styles.scss` (les `.css` générés à côté ne servent plus).
+
+### Pas encore fait (à suivre)
+1. **Multi-salles** (colonne `tenant_id` + claim JWT) : tout est mono-salle (`gym_settings` id = 1).
+2. **Agrégateur KKiaPay / FedaPay** : webhook générique signé + confirmation manuelle ; à adapter au format réel une fois le compte marchand ouvert (`application.payment.webhook-secret`, `payment_link_base_url`).
+3. **Envoi SMS automatique** : pas de fournisseur ; les relances partent par lien wa.me / sms: depuis le téléphone de la salle.
+4. **Création des comptes réceptionnistes** depuis Paramètres (côté gateway).
+5. Paiements hors ligne (seuls les pointages le sont), import `.xlsx` direct, tests automatisés des nouveaux services, admin plateforme.

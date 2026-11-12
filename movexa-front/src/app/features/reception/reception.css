@@ -1,162 +1,113 @@
-/* ================================================================
-   ACCUEIL — encaissement au comptoir
-   ================================================================ */
+.rc-search {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-.reception-row {
+.rc-input {
+  height: 52px;
+  font-size: 20px;
+}
+
+.rc-results {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.rc-result {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-4);
-  align-items: flex-start;
-}
-
-/* ---- Encaissement ---- */
-.checkout {
-  flex: 1 1 400px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.hits {
-  display: flex;
-  flex-direction: column;
-}
-
-.hit {
-  min-height: 52px;
-  padding: 6px 10px;
-  display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.rc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rc-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+}
+
+.rc-tile {
+  min-height: 120px;
+  padding: var(--space-5);
   border: 0;
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
   text-align: left;
-  cursor: pointer;
-}
-
-.hit:hover {
-  background: var(--color-surface-raised);
-}
-
-.hit--selected,
-.hit--selected:hover {
-  background: var(--color-surface-selected);
-}
-
-.hit .status-dot {
-  width: 12px;
-  height: 12px;
-}
-
-.hit-info {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.hit-name {
-  display: block;
-  font-size: var(--font-size-base);
-  line-height: 20px;
-  font-weight: var(--font-weight-bold);
-}
-
-.hit-meta {
-  display: block;
-  margin: 0;
-  font-size: var(--font-size-sm);
-  line-height: 20px;
-  color: var(--color-text-soft);
-}
-
-.modes {
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.modes legend {
-  margin-bottom: 6px;
-}
-
-.mode-buttons {
+  text-decoration: none;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.mode-btn {
-  flex: 1 1 96px;
-  min-height: var(--touch-target);
-  border: 1px solid var(--color-text);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font: inherit;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-bold);
+  flex-direction: column;
+  gap: 4px;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
 }
 
-.mode-btn[aria-pressed='true'] {
-  background: var(--color-text);
-  color: var(--color-surface);
+.rc-tile svg {
+  margin-bottom: 8px;
 }
 
-.checkout-total {
-  padding-top: var(--space-3);
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3);
-  border-top: 1px solid var(--color-border);
-  font-size: var(--font-size-base);
+.rc-tile--dark {
+  background: var(--color-dark-panel);
+  color: var(--color-on-dark);
 }
 
-.checkout-amount {
-  font-size: 26px;
-  line-height: 32px;
+.rc-tile--dark:hover {
+  color: var(--color-on-dark);
+}
+
+.rc-tile--sand {
+  background: var(--color-primary);
+}
+
+.rc-tile-label {
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-black);
 }
 
-.confirmation {
-  padding: var(--space-3) 14px;
+.rc-tile-sub {
+  font-size: var(--font-size-sm);
+  opacity: 0.85;
+}
+
+.rc-lists {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--color-dark-panel);
-  color: var(--color-on-dark);
-  font-size: var(--font-size-base);
-  line-height: 22px;
+  gap: var(--space-4);
+  align-items: flex-start;
 }
 
-.confirmation a {
-  color: var(--palette-sand-300);
-  font-weight: var(--font-weight-bold);
+.rc-list {
+  flex: 1 1 420px;
+  min-width: 0;
 }
 
-/* ---- Encaissements du jour ---- */
-.today {
-  flex: 1.5 1 460px;
+.rc-list-head {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
 }
 
-.today-grid {
-  min-width: 600px;
+.rc-list-head p {
+  margin: 0;
 }
 
-.today-grid .grid-row {
-  grid-template-columns: 56px 1.6fr 1fr 1fr 64px;
-  gap: var(--space-3);
+.rc-score {
+  width: 52px;
+  flex: 0 0 auto;
+  font-weight: var(--font-weight-black);
 }
 
-.today-grid .grid-row--head {
-  padding-top: 10px;
-  padding-bottom: 10px;
-  font-size: var(--font-size-sm);
+.rc-score--low {
+  color: var(--color-danger-strong);
 }

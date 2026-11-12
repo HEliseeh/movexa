@@ -22,6 +22,10 @@
 
   <!-- Droite : utilisateur + déconnexion -->
   <div class="topbar-right">
+    <span class="topbar-sync" [class.topbar-sync--off]="!offline.online()" role="status">
+      <span class="topbar-sync-dot" aria-hidden="true"></span>{{ syncLabel() }}
+    </span>
+
     @if (user()) {
       <div class="topbar-user">
         <div class="topbar-username">{{ displayName() }}</div>

@@ -6,116 +6,130 @@
       <h1 class="page-title">Tableau de bord</h1>
       <p class="page-subtitle">{{ today }}</p>
     </div>
-    <button type="button" class="btn btn-primary">Exporter le rapport</button>
+    <div class="segmented" role="tablist" aria-label="Période">
+      @for (p of periods; track p.id) {
+        <button type="button" role="tab" [attr.aria-selected]="period() === p.id" (click)="setPeriod(p.id)">{{ p.label }}</button>
+      }
+    </div>
   </header>
 
-  <!-- ===== KPI ===== -->
-  <section class="kpi-grid" aria-label="Indicateurs clés">
-    @for (kpi of kpis; track kpi.label) {
-      <article class="kpi-card">
-        <div class="kpi-label">{{ kpi.label }}</div>
-        <div class="kpi-value">{{ kpi.value }}</div>
-        <div class="kpi-sub">{{ kpi.sub }}</div>
-      </article>
-    }
-  </section>
+  @if (error(); as e) {
+    <div class="alert alert--error" role="alert">{{ e }} <button type="button" class="link-btn" (click)="load()">Réessayer</button></div>
+  }
 
-  <!-- ===== Graphe + relances ===== -->
-  <div class="middle-row">
+  @if (data(); as d) {
+    <!-- ===== ARGENT + KPI ===== -->
+    <div class="db-top">
+      <section class="db-money" aria-labelledby="db-money-title">
+        <div>
+          <h2 id="db-money-title" class="db-money-title">Encaissé {{ periodText() }}</h2>
+          <div class="db-money-total">{{ fcfa(d.totalPaid) }}</div>
+          <div class="db-money-sub">
+            {{ d.paymentsCount }} paiement{{ d.paymentsCount > 1 ? 's' : '' }} enregistré{{ d.paymentsCount > 1 ? 's' : '' }}@if (d.cancelledCount) {, {{ d.cancelledCount }} annulé{{ d.cancelledCount > 1 ? 's' : '' }}}
+          </div>
+        </div>
+        <div class="db-stack" aria-hidden="true">
+          @for (m of methods(); track m.label) {
+            <span [style.width.%]="m.pct" [style.background]="m.color"></span>
+          }
+        </div>
+        <div class="db-legend">
+          @for (m of methods(); track m.label) {
+            <div class="db-legend-item">
+              <span class="db-swatch" [style.background]="m.color"></span>
+              <div>
+                <div class="db-legend-label">{{ m.label }}</div>
+                <div class="db-legend-value">{{ fcfa(m.value) }}</div>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
 
-    <section class="card chart-card">
-      <div class="chart-head">
-        <h2 class="card-title">Présences d'aujourd'hui, par heure</h2>
-        <div class="chart-readout" aria-live="polite">{{ chartReadout() }}</div>
-      </div>
-
-      <div class="chart">
-        @for (line of gridLines; track line.value) {
-          <div class="chart-gridline" [style.bottom.px]="line.px">
-            <span class="chart-gridlabel">{{ line.value }}</span>
+      <div class="db-kpis">
+        @for (k of kpis(); track k.label) {
+          <div class="kpi">
+            <div class="kpi-label">{{ k.label }}</div>
+            <div class="kpi-value">{{ k.value }}</div>
+            <div class="kpi-sub">{{ k.sub }}</div>
           </div>
         }
-        <div class="chart-bars">
-          @for (bar of bars; track bar.hour) {
-            <button
-              type="button"
-              class="chart-bar"
-              [attr.aria-label]="bar.aria"
-              (mouseenter)="hoveredHour.set(bar.hour)"
-              (focus)="hoveredHour.set(bar.hour)"
-              (mouseleave)="hoveredHour.set(null)"
-              (blur)="hoveredHour.set(null)"
-            >
-              <span class="chart-bar-fill" [class]="'chart-bar-fill chart-bar-fill--' + bar.kind" [style.height.px]="bar.px"></span>
+      </div>
+    </div>
+
+    <!-- ===== FRÉQUENTATION ===== -->
+    <section class="card db-chart-card">
+      <div class="db-chart-head">
+        <h2 class="card-title">Fréquentation : entrées par jour, 14 derniers jours</h2>
+        <div class="text-strong" aria-live="polite">{{ readout() }}</div>
+      </div>
+      <div class="db-chart">
+        @for (l of gridLines(); track l.value) {
+          <div class="db-gridline" [style.bottom.px]="l.px"><span>{{ l.value }}</span></div>
+        }
+        <div class="db-bars">
+          @for (day of days(); track $index) {
+            <button type="button" class="db-bar" [attr.aria-label]="day.aria"
+                    (mouseenter)="hovered.set($index)" (focus)="hovered.set($index)" (mouseleave)="hovered.set(null)" (blur)="hovered.set(null)">
+              <span [style.height.px]="day.px" [class.current]="day.current"></span>
             </button>
           }
         </div>
       </div>
-      <div class="chart-ticks" aria-hidden="true">
-        @for (bar of bars; track bar.hour) {
-          <span>{{ bar.tick }}</span>
-        }
+      <div class="db-ticks" aria-hidden="true">
+        @for (day of days(); track $index) { <span>{{ day.tick }}</span> }
       </div>
-
-      <div class="chart-legend">
-        <span><span class="legend-swatch chart-bar-fill--past"></span>Entrées enregistrées</span>
-        <span><span class="legend-swatch chart-bar-fill--current"></span>Heure en cours</span>
-        <span><span class="legend-swatch chart-bar-fill--average"></span>Moyenne habituelle</span>
+      <div class="db-chart-legend">
+        <span><span class="db-swatch db-swatch--past"></span>Journée terminée</span>
+        <span><span class="db-swatch db-swatch--current"></span>Aujourd’hui, en cours</span>
       </div>
     </section>
 
-    <section class="card reminders-card">
-      <h2 class="card-title">Relances à faire</h2>
-      <ul class="reminder-list">
-        @for (r of reminders; track r.id) {
-          <li class="reminder">
-            <span class="status-dot" [class]="'status-dot status-dot--' + r.tone"></span>
-            <div class="reminder-info">
-              <div class="text-strong">{{ r.name }}</div>
-              <div class="reminder-reason">{{ r.reason }}</div>
+    <!-- ===== À SUIVRE ===== -->
+    <div class="db-lists">
+      <section class="card card--flush db-list">
+        <div class="card-head">
+          <h2 class="card-title">À renouveler bientôt <span class="db-count">({{ d.expiringCount }})</span></h2>
+          <a routerLink="/subscriptions" class="text-strong">Tout voir</a>
+        </div>
+        @for (r of d.expiring; track r.member.id) {
+          <div class="follow-row">
+            <span class="status-dot status-dot--warning"></span>
+            <div class="follow-main">
+              <a class="follow-name" [routerLink]="['/members', r.member.id]">{{ r.member.firstName }} {{ r.member.lastName }}</a>
+              <div class="follow-detail">{{ dueDetail(r, false) }}</div>
             </div>
-            <button
-              type="button"
-              class="btn btn-outline btn-sm"
-              [class.is-done]="sent().has(r.id)"
-              [disabled]="sent().has(r.id)"
-              (click)="sendReminder(r.id)"
-            >{{ sent().has(r.id) ? 'Envoyée' : 'Relancer' }}</button>
-          </li>
+            <button type="button" class="btn btn-outline btn-sm" [class.is-done]="sent().has(r.member.id)" [disabled]="sent().has(r.member.id)" (click)="remind(r)">
+              {{ sent().has(r.member.id) ? 'Envoyée' : 'Relancer' }}
+            </button>
+          </div>
+        } @empty {
+          <p class="empty">Aucun abonnement n’arrive à échéance dans les prochains jours.</p>
         }
-      </ul>
-    </section>
+      </section>
 
-  </div>
-
-  <!-- ===== Échéances ===== -->
-  <section class="card card--flush">
-    <div class="card-head">
-      <h2 class="card-title">Abonnements à échéance sous 7 jours</h2>
-      <a routerLink="/subscriptions" class="text-strong">Voir tous les abonnements</a>
-    </div>
-    <div class="grid-scroll">
-      <div class="expirations">
-        <div class="grid-row grid-row--head">
-          <span>Adhérent</span><span>Formule</span><span>Échéance</span><span>Statut</span>
-          <span class="text-right">Montant</span>
+      <section class="card card--flush db-list">
+        <div class="card-head">
+          <h2 class="card-title">Expirés, non renouvelés <span class="db-count">({{ d.expiredCount }})</span></h2>
+          <a routerLink="/subscriptions" [queryParams]="{ tab: 'expired' }" class="text-strong">Tout voir</a>
         </div>
-        <div>
-          @for (e of expirations; track e.name) {
-            <div class="grid-row grid-row--roomy">
-              <span>{{ e.name }}</span>
-              <span>{{ e.plan }}</span>
-              <span>{{ e.date }}</span>
-              <span class="status"><span class="status-dot" [class]="'status-dot status-dot--' + e.tone"></span>{{ e.status }}</span>
-              <span class="text-right">{{ e.amount }}</span>
+        @for (r of d.expired; track r.member.id) {
+          <div class="follow-row">
+            <span class="status-dot status-dot--danger"></span>
+            <div class="follow-main">
+              <a class="follow-name" [routerLink]="['/members', r.member.id]">{{ r.member.firstName }} {{ r.member.lastName }}</a>
+              <div class="follow-detail">{{ dueDetail(r, true) }}</div>
             </div>
-          }
-        </div>
-      </div>
+            <a routerLink="/reminders" class="btn btn-outline btn-sm">Voir la relance</a>
+          </div>
+        } @empty {
+          <p class="empty">Aucun membre expiré.</p>
+        }
+      </section>
     </div>
-  </section>
-
+  } @else if (!error()) {
+    <p class="empty">Chargement…</p>
+  }
 </div>
 
-<!-- FAB actions rapides — spécifique à cet écran -->
 <app-fab [actions]="fabActions" (actionTriggered)="onFabAction($event)" />

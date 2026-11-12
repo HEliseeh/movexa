@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        Rôles du MVP dans une salle :
+        - gérant : ROLE_ADMIN (formules, annulations, tableau de bord financier, paramètres)
+        - réceptionniste : ROLE_RECEPTION (inscrire, encaisser, pointer)
+    -->
+    <changeSet id="20261112-1" author="elisee">
+        <insert tableName="jhi_authority">
+            <column name="name" value="ROLE_RECEPTION"/>
+        </insert>
+    </changeSet>
+
+    <!-- En développement, le compte « user » (mot de passe user) sert de réceptionniste -->
+    <changeSet id="20261112-2" author="elisee" context="dev">
+        <sql>
+            INSERT INTO jhi_user_authority (user_id, authority_name)
+            SELECT u.id, 'ROLE_RECEPTION' FROM jhi_user u
+             WHERE u.login = 'user'
+               AND NOT EXISTS (SELECT 1 FROM jhi_user_authority a WHERE a.user_id = u.id AND a.authority_name = 'ROLE_RECEPTION');
+        </sql>
+    </changeSet>
+</databaseChangeLog>

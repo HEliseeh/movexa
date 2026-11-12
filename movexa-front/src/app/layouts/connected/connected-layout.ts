@@ -1,10 +1,11 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
+import { CurrentUserStore } from '@core/auth/current-user.store';
 import { MenuComponent } from '@core/components/menu-component/menu-component';
 import { Topbar } from '@core/components/topbar/topbar';
-import { MENU_ITEMS, MenuStep } from '@shared/models/Navigation.model';
+import { MENU_ITEMS } from '@shared/models/Navigation.model';
 import { Toast } from '@shared/toast/toast';
 
 @Component({
@@ -14,11 +15,13 @@ import { Toast } from '@shared/toast/toast';
   styleUrl:    './connected-layout.scss',
 })
 export class ConnectedLayout {
+  private readonly store = inject(CurrentUserStore);
+
   /** Menu latéral ouvert sur petit écran (sur grand écran il est toujours visible) */
   readonly menuOpen = signal(false);
 
-  /** Items de navigation déclarés dans Navigation.model.ts */
-  readonly menuItems: MenuStep[] = MENU_ITEMS;
+  /** Entrées visibles pour le rôle de l'utilisateur (le réceptionniste n'a ni chiffres ni paramètres) */
+  readonly menuItems = computed(() => MENU_ITEMS.filter(item => !item.roles || this.store.hasAnyRole(item.roles)));
 
   constructor() {
     // Referme le menu mobile après chaque navigation

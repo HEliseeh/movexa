@@ -11,6 +11,8 @@ export class CurrentUserStore {
   private _user = signal<User | null>(null);
   readonly user = this._user.asReadonly();
   readonly roles = computed(() => this._user()?.authorities ?? []);
+  /** Gérant de la salle (ROLE_ADMIN) : formules, annulations, chiffres, paramètres */
+  readonly isManager = computed(() => this.roles().includes('ROLE_ADMIN'));
 
   hasAnyRole(required: string[]): boolean {
     return required.some(r => this.roles().includes(r));

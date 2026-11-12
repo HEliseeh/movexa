@@ -1,0 +1,142 @@
+<div class="page-sheet">
+  <header class="sheet-header sheet-header--tabs">
+    <div class="pm-top">
+      <div>
+        <h1 class="page-title">Encaissements et caisse</h1>
+        <p class="page-subtitle">Total encaissé le {{ frDate(date()) }} : <strong>{{ fcfa(dayTotal()) }}</strong></p>
+      </div>
+      <div class="page-actions">
+        <label class="sr-only" for="pm-date">Jour affiché</label>
+        <input id="pm-date" class="input-line pm-date" type="date" [max]="today" [ngModel]="date()" (ngModelChange)="changeDate($event)" />
+        <button type="button" class="btn btn-primary" (click)="paying.set(true)">Nouvel encaissement</button>
+      </div>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Vues">
+      <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'pays'" (click)="tab.set('pays')">Paiements</button>
+      <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'links'" (click)="tab.set('links')">Liens de paiement</button>
+      <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'close'" (click)="tab.set('close')">Clôture de caisse</button>
+    </div>
+  </header>
+
+  <!-- ===== PAIEMENTS DU JOUR ===== -->
+  @if (tab() === 'pays') {
+    <div class="grid-scroll">
+      <div class="pm-grid">
+        <div class="grid-row grid-row--head"><span>Heure</span><span>Membre</span><span>Objet</span><span>Moyen</span><span class="text-right">Montant</span><span>Saisi par</span><span>Reçu / réf.</span><span>Statut</span><span></span></div>
+        @for (p of payments(); track p.id) {
+          <div class="grid-row" [class.pm-cancelled]="p.status === 'CANCELLED'">
+            <span>{{ hour(p.createdAt) }}</span>
+            <a class="text-strong pm-name" [routerLink]="['/members', p.memberId]">{{ p.memberName }}</a>
+            <span>{{ p.planName }}</span>
+            <span>{{ methodLabels[p.method] }}</span>
+            <span class="text-right pm-amount">{{ fcfa(p.amount) }}</span>
+            <span>{{ p.createdBy }}</span>
+            <span>
+              @if (p.receiptNumber) { <a [routerLink]="['/receipts', p.id]">{{ p.receiptNumber }}</a> }
+              @if (p.reference) { <span class="help"> {{ p.reference }}</span> }
+            </span>
+            <span class="status" [title]="p.cancelReason ? 'Annulé par ' + p.cancelledBy + ' : ' + p.cancelReason : ''">
+              <span class="status-dot" [class.status-dot--success]="p.status === 'PAID'" [class.status-dot--warning]="p.status === 'PENDING'"></span>
+              {{ p.status === 'PAID' ? 'Payé' : p.status === 'PENDING' ? 'Lien en attente' : 'Annulé : ' + p.cancelReason }}
+            </span>
+            <span>
+              @if (store.isManager() && p.status !== 'CANCELLED') {
+                <button type="button" class="link-btn" (click)="cancelling.set(p)">Annuler</button>
+              }
+            </span>
+          </div>
+        } @empty {
+          <p class="empty">{{ loading() ? 'Chargement…' : 'Aucun paiement ce jour-là.' }}</p>
+        }
+      </div>
+    </div>
+    @if (!store.isManager()) {
+      <p class="help pm-note">Une erreur de saisie ? Demandez au gérant d’annuler le paiement : l’annulation est tracée avec son motif.</p>
+    }
+  }
+
+  <!-- ===== LIENS DE PAIEMENT ===== -->
+  @if (tab() === 'links') {
+    <div class="grid-scroll">
+      <div class="pm-links">
+        <div class="grid-row grid-row--head"><span>Membre</span><span class="text-right">Montant</span><span>Envoyé</span><span>Statut</span><span>Référence</span><span></span></div>
+        @for (p of links(); track p.id) {
+          <div class="grid-row">
+            <a class="text-strong pm-name" [routerLink]="['/members', p.memberId]">{{ p.memberName }}</a>
+            <span class="text-right">{{ fcfa(p.amount) }}</span>
+            <span>{{ dayHour(p.createdAt) }}</span>
+            <span class="status"><span class="status-dot" [class.status-dot--success]="p.status === 'PAID'" [class.status-dot--warning]="p.status === 'PENDING'"></span>{{ linkStatus(p) }}</span>
+            <span>{{ p.reference ?? '—' }}</span>
+            <span class="pm-actions">
+              @if (p.status === 'PENDING') {
+                <a class="btn btn-outline btn-sm" [href]="resendLink(p)" target="_blank" rel="noopener">Renvoyer</a>
+                @if (store.isManager()) { <button type="button" class="btn btn-outline btn-sm" (click)="confirmLink(p)">Confirmer reçu</button> }
+              } @else if (p.status === 'PAID') {
+                <a class="btn btn-outline btn-sm" [routerLink]="['/receipts', p.id]">Voir le reçu</a>
+              }
+            </span>
+          </div>
+        } @empty {
+          <p class="empty">Aucun lien de paiement envoyé ces 60 derniers jours. Le paiement par lien s’active dans Paramètres › Paiements, une fois le compte marchand KKiaPay ou FedaPay ouvert.</p>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ===== CLÔTURE DE CAISSE ===== -->
+  @if (tab() === 'close') {
+    @if (cash(); as c) {
+      <div class="pm-close">
+        @if (c.closure; as cl) {
+          <div class="alert alert--success" role="status">
+            Caisse du {{ frDate(cl.closingDate) }} clôturée par {{ cl.closedBy }} à {{ hour(cl.closedAt) }}.
+            Espèces : {{ fcfa(cl.countedCash) }} comptés pour {{ fcfa(cl.expectedCash) }} attendus ·
+            MTN : {{ fcfa(cl.countedMtn) }} / {{ fcfa(cl.expectedMtn) }} · Moov : {{ fcfa(cl.countedMoov) }} / {{ fcfa(cl.expectedMoov) }}.
+            @if (cl.reason) { Motif de l’écart : {{ cl.reason }}. }
+          </div>
+        } @else {
+          <p class="help">Comparez ce que la caisse et les téléphones de la salle contiennent avec ce qui a été saisi dans MOVEXA ({{ c.paymentsCount }} paiements).</p>
+          <div class="pm-close-grid">
+            <div class="grid-row grid-row--head"><span>Moyen</span><span class="text-right">Attendu</span><span>Constaté</span><span class="text-right">Écart</span></div>
+            @for (r of closeRows(); track r.label; let i = $index) {
+              <div class="grid-row">
+                <span><span class="text-strong">{{ r.label }}</span><br /><span class="help">{{ r.hint }}</span></span>
+                <span class="text-right">{{ fcfa(r.expected) }}</span>
+                <span>
+                  <input class="input-line" type="number" min="0" inputmode="numeric" [attr.aria-label]="r.label + ' constaté'"
+                         [ngModel]="i === 0 ? countedCash() : i === 1 ? countedMtn() : countedMoov()"
+                         (ngModelChange)="i === 0 ? countedCash.set($event) : i === 1 ? countedMtn.set($event) : countedMoov.set($event)" />
+                </span>
+                <span class="text-right text-strong" [class.pm-gap]="r.gap !== null && r.gap !== 0">{{ r.gap === null ? '—' : r.gap === 0 ? '0' : fcfa(r.gap) }}</span>
+              </div>
+            }
+            <div class="grid-row">
+              <span><span class="text-strong">Lien de paiement</span><br /><span class="help">Confirmé par l’agrégateur</span></span>
+              <span class="text-right">{{ fcfa(c.expectedLink) }}</span><span class="help">Automatique</span><span class="text-right">0</span>
+            </div>
+          </div>
+          <div class="pm-close-foot">
+            <div class="pm-total" [class.pm-total--gap]="hasGap()">Écart total : {{ hasGap() ? fcfa(totalGap()) : 'aucun' }}</div>
+            @if (hasGap()) {
+              <div class="field pm-reason">
+                <label for="pm-reason">Motif de l’écart (obligatoire)</label>
+                <input id="pm-reason" class="input-line" maxlength="300" [ngModel]="reason()" (ngModelChange)="reason.set($event)" />
+              </div>
+            }
+            @if (closeError(); as e) { <div class="alert alert--error" role="alert">{{ e }}</div> }
+            <button type="button" class="btn btn-primary btn-lg" [disabled]="closing() || !allCounted() || (hasGap() && !reason().trim())" (click)="closeCash()">
+              {{ closing() ? 'Clôture…' : 'Clôturer la caisse du ' + frDate(c.date) }}
+            </button>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>
+
+@if (paying()) {
+  <app-pay-dialog (paid)="onPaid($event)" (closed)="paying.set(false)" />
+}
+@if (cancelling(); as p) {
+  <app-cancel-payment [payment]="p" (done)="onCancelled($event)" (cancelled)="cancelling.set(null)" />
+}

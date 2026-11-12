@@ -12,7 +12,7 @@
       [class.layout-sidenav--open]="menuOpen()"
       aria-label="Navigation principale"
     >
-      @for (item of menuItems; track item.id) {
+      @for (item of menuItems(); track item.id) {
         <app-menu-component [item]="item" />
       }
     </nav>

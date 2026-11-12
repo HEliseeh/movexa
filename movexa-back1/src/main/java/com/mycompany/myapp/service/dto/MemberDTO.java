@@ -2,6 +2,8 @@ package com.mycompany.myapp.service.dto;
 
 import com.mycompany.myapp.domain.enumeration.Gender;
 import com.mycompany.myapp.domain.enumeration.MemberStatus;
+import com.mycompany.myapp.domain.enumeration.PaymentMethod;
+import com.mycompany.myapp.domain.enumeration.SubscriptionState;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -62,8 +64,7 @@ public class MemberDTO implements Serializable {
     /** Facultatif à la création (ACTIVE par défaut). */
     private MemberStatus status;
 
-    @NotBlank(message = "La formule est obligatoire")
-    @Size(max = 100)
+    /** Formule en cours (lecture seule : elle change par un encaissement, pas par ce formulaire). */
     private String plan;
 
     @Size(max = 100)
@@ -72,7 +73,7 @@ public class MemberDTO implements Serializable {
     @Size(max = 150)
     private String program;
 
-    @NotNull(message = "La date de début est obligatoire")
+    /** Début de la période en cours (lecture seule). */
     private LocalDate subscriptionStartDate;
 
     private Boolean autoRenew;
@@ -80,11 +81,37 @@ public class MemberDTO implements Serializable {
     /** Date d'inscription : fixée par le serveur. */
     private LocalDate joinDate;
 
-    /** Calculée par le serveur (date de début + durée de la formule). */
+    /** Fin de la période en cours (dernier jour valable), calculée par le serveur. */
     private LocalDate expiryDate;
 
-    /** En lecture seule : alimentés plus tard par le module Access. */
+    /** Lecture seule : mis à jour par le pointage. */
     private LocalDate lastVisitDate;
 
     private Integer visitsLast30Days;
+
+    /** Lecture seule : actif, expire bientôt, expiré ou sans abonnement. */
+    private SubscriptionState state;
+
+    /** Lecture seule : jours restants avant la fin (négatif si expiré). */
+    private Long daysLeft;
+
+    /** Lecture seule : contenu du QR code personnel. */
+    private String qrToken;
+
+    // ---- À la création uniquement : formule et paiement en une seule fois ----
+
+    /** Formule choisie à l'inscription (facultatif : inscription sans abonnement possible). */
+    private Long planId;
+
+    /** Moyen de paiement de la première formule (obligatoire si planId est renseigné). */
+    private PaymentMethod paymentMethod;
+
+    /** Date de début de la première formule (aujourd'hui par défaut). */
+    private LocalDate planStartDate;
+
+    /** Prospect converti en membre par cette inscription. */
+    private Long prospectId;
+
+    /** Lecture seule : le paiement créé à l'inscription (pour le reçu ou le lien). */
+    private PaymentDtos.PaymentDTO payment;
 }

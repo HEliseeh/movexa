@@ -1,0 +1,97 @@
+/* Pop-up « Nouveau membre » : la structure vient des classes globales .modal-* */
+
+.mf-head-icon {
+  width: var(--touch-target);
+  height: var(--touch-target);
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-surface-selected);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mf-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mf-section-title {
+  margin: 0;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border-soft);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: var(--font-weight-black);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-link);
+}
+
+.mf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px 28px;
+}
+
+.mf-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.req {
+  color: var(--color-danger-strong);
+}
+
+.input-line.invalid {
+  border-bottom-width: 2px;
+  border-bottom-color: var(--color-danger-strong);
+}
+
+.mf-spacer {
+  flex: 1 1 auto;
+}
+
+.mf-delete {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--color-danger-strong);
+  font: inherit;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.mf-delete:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.mf-done {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.mf-done-title {
+  margin: 0 0 4px;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-black);
+}
+
+.mf-done-text {
+  margin: 0;
+  color: var(--color-text-soft);
+}
+
+.mf-done-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

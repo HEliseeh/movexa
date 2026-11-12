@@ -1,117 +1,138 @@
 <div class="page-sheet">
-
   <header class="sheet-header sheet-header--tabs">
     <h1 class="page-title">Paramètres</h1>
-    <div class="tabs" role="tablist" aria-label="Sections des paramètres">
-      @for (t of tabs; track t.id) {
-        <button type="button" role="tab" class="tab" [attr.aria-selected]="tab() === t.id" (click)="selectTab(t.id)">{{ t.label }}</button>
+    <div class="tabs" role="tablist" aria-label="Sections">
+      @for (t of tabs; track t[0]) {
+        <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === t[0]" (click)="setTab(t[0])">{{ t[1] }}</button>
       }
     </div>
   </header>
 
-  @switch (tab()) {
-
-    <!-- ===== Ma salle ===== -->
-    @case ('gym') {
-      <form class="gym-form" (ngSubmit)="save()">
-        @for (f of gymFields; track f.id) {
-          <div class="field">
-            <label [for]="f.id">{{ f.label }}</label>
-            <input class="input-line" [id]="f.id" [name]="f.id" [type]="f.type" [placeholder]="f.placeholder" [(ngModel)]="gym[f.id]" />
+  @if (settings(); as s) {
+    <div class="st-body">
+      @switch (tab()) {
+        @case ('gym') {
+          <div class="st-grid">
+            @for (f of gymFields; track f.key) {
+              <div class="field">
+                <label [for]="'st-' + f.key">{{ f.label }}</label>
+                <input [id]="'st-' + f.key" class="input-line" [type]="f.type" [placeholder]="f.placeholder" [ngModel]="value(f.key)" (ngModelChange)="set(f.key, $event)" />
+              </div>
+            }
+            <div class="field">
+              <label for="st-seuil">« Expire bientôt » à partir de (jours avant la fin)</label>
+              <input id="st-seuil" class="input-line" type="number" min="1" max="60" [ngModel]="s.expiringSoonDays" (ngModelChange)="set('expiringSoonDays', $event)" />
+            </div>
           </div>
         }
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary btn-lg">Enregistrer</button>
-          <span role="status" class="saved">{{ savedMessage() }}</span>
-        </div>
-      </form>
-    }
 
-    <!-- ===== Personnel et coachs ===== -->
-    @case ('team') {
-      <div class="sheet-header team-toolbar">
-        <button type="button" class="btn btn-primary">Ajouter un membre de l'équipe</button>
-      </div>
-      <div class="grid-scroll">
-        <div class="team-grid">
-          <div class="grid-row grid-row--head">
-            <span>Nom</span><span>Rôle</span><span>Spécialité</span><span>Adhérents suivis</span><span>Statut</span><span></span>
-          </div>
-          <div>
-            @for (p of team; track p.name) {
-              <div class="grid-row">
-                <span class="text-strong">{{ p.name }}</span>
-                <span>{{ p.role }}</span>
-                <span>{{ p.specialty }}</span>
-                <span>{{ p.followed }}</span>
-                <span class="status">
-                  <span class="status-dot" [class.status-dot--success]="p.active" [class.status-dot--neutral]="!p.active"></span>
-                  {{ p.active ? 'Actif' : 'En congé' }}
-                </span>
-                <button type="button" class="btn btn-outline btn-sm">Modifier</button>
-              </div>
-            }
-          </div>
-        </div>
-      </div>
-    }
-
-    <!-- ===== Paiements et reçus ===== -->
-    @case ('payments') {
-      <div class="payments-settings">
-        <section>
-          <h2 class="card-title section-title">Moyens de paiement acceptés</h2>
-          @for (m of paymentMethods(); track m.id) {
-            <div class="method">
-              <div>
-                <div class="text-strong">{{ m.label }}</div>
-                <div class="method-detail">{{ m.detail }}</div>
-              </div>
-              <button
-                type="button"
-                class="switch"
-                [attr.aria-pressed]="m.enabled"
-                [attr.aria-label]="m.label + (m.enabled ? ', activé' : ', désactivé')"
-                (click)="togglePayment(m.id)"
-              >
-                <span class="switch-track"><span class="switch-thumb"></span></span>
-              </button>
+        @case ('users') {
+          <section>
+            <h2 class="card-title">Comptes</h2>
+            @if (usersError(); as e) { <p class="help">{{ e }}</p> }
+            <div class="st-users">
+              @for (u of users(); track u.id) {
+                <div class="grid-row">
+                  <span class="text-strong">{{ u.firstName || u.login }} {{ u.lastName || '' }}</span>
+                  <span>{{ u.login }}</span>
+                  <span>{{ roleLabel(u) }}</span>
+                  <span class="status"><span class="status-dot" [class.status-dot--success]="u.activated"></span>{{ u.activated ? 'Actif' : 'Désactivé' }}</span>
+                </div>
+              }
             </div>
-          }
-        </section>
-        <div class="field">
-          <label for="receipt-notes">Mentions imprimées sur les reçus PDF</label>
-          <textarea id="receipt-notes" class="textarea-box" rows="3" name="receiptNotes"
-                    placeholder="Raison sociale, identifiant fiscal, conditions de remboursement"
-                    [(ngModel)]="receiptNotes"></textarea>
-        </div>
-      </div>
-    }
+            <p class="help">Création des comptes réceptionnistes : pas encore disponible depuis cet écran (étape suivante, côté gateway).</p>
+          </section>
+          <section>
+            <h2 class="card-title">Ce que peut faire le réceptionniste</h2>
+            <div class="st-perms">
+              @for (p of permissions; track p[0]) {
+                <div class="grid-row"><span>{{ p[0] }}</span><span [class.text-strong]="p[1] === 'Oui'">{{ p[1] }}</span></div>
+              }
+            </div>
+            <p class="help">Le gérant peut tout faire. Ces règles sont appliquées par le serveur, pas seulement par l’affichage.</p>
+          </section>
+        }
 
-    <!-- ===== Relances ===== -->
-    @case ('reminders') {
-      <div class="grid-scroll">
-        <div class="rules-grid">
-          <div class="grid-row grid-row--head">
-            <span>Règle</span><span>Déclencheur</span><span>E-mail</span><span>SMS</span><span>WhatsApp</span>
-          </div>
-          <div>
-            @for (r of rules(); track r.id) {
-              <div class="grid-row">
-                <span class="text-strong">{{ r.label }}</span>
-                <span>{{ r.trigger }}</span>
-                <label class="checkbox-label">
-                  <input type="checkbox" [attr.aria-label]="r.label + ' par e-mail'" [checked]="r.email" (change)="toggleRule(r.id, 'email')" />
-                </label>
-                <label class="checkbox-label">
-                  <input type="checkbox" [attr.aria-label]="r.label + ' par SMS'" [checked]="r.sms" (change)="toggleRule(r.id, 'sms')" />
-                </label>
-                <span class="method-detail">Prévu en V2</span>
+        @case ('pay') {
+          <section class="st-section">
+            <h2 class="card-title">Moyens de paiement à l’accueil</h2>
+            @for (m of methodToggles; track m.key) {
+              <div class="st-toggle">
+                <div><div class="text-strong">{{ m.label }}</div><div class="help">{{ m.detail }}</div></div>
+                <button type="button" class="switch" [attr.aria-pressed]="value(m.key)" [attr.aria-label]="m.label" (click)="toggle(m.key)"><span class="switch-track"><span class="switch-thumb"></span></span></button>
               </div>
             }
-          </div>
+          </section>
+          <section class="st-section">
+            <h2 class="card-title">Paiement par lien (en ligne)</h2>
+            <div class="choices">
+              <button type="button" class="choice" [attr.aria-pressed]="s.aggregator === 'KKIAPAY'" (click)="set('aggregator', 'KKIAPAY')">KKiaPay</button>
+              <button type="button" class="choice" [attr.aria-pressed]="s.aggregator === 'FEDAPAY'" (click)="set('aggregator', 'FEDAPAY')">FedaPay</button>
+            </div>
+            <div class="field st-wide">
+              <label for="st-link">Adresse de base des liens de paiement</label>
+              <input id="st-link" class="input-line" type="url" placeholder="Vide tant que le compte marchand n’est pas ouvert" [ngModel]="s.paymentLinkBaseUrl" (ngModelChange)="set('paymentLinkBaseUrl', $event)" />
+              <span class="help">
+                <span class="status"><span class="status-dot" [class.status-dot--success]="!!s.paymentLinkBaseUrl" [class.status-dot--warning]="!s.paymentLinkBaseUrl"></span>{{ s.paymentLinkBaseUrl ? 'Paiement par lien activé' : 'Compte marchand non connecté : le paiement par lien est désactivé' }}</span>
+              </span>
+            </div>
+            <p class="help">L’agrégateur confirme chaque paiement au serveur (webhook signé). L’intégration exacte se fera avec la documentation de l’agrégateur choisi, une fois le compte ouvert.</p>
+          </section>
+        }
+
+        @case ('reminders') {
+          <section class="st-section">
+            <h2 class="card-title">Règles de relance des membres</h2>
+            <div class="st-rules">
+              <div class="grid-row grid-row--head"><span>Règle</span><span>Quand</span><span>SMS</span><span>WhatsApp</span></div>
+              @for (r of reminderRules; track r.label) {
+                <div class="grid-row">
+                  <span class="text-strong">{{ r.label }}</span><span>{{ r.when }}</span>
+                  <span><input type="checkbox" class="st-check" [attr.aria-label]="r.label + ' par SMS'" [ngModel]="value(r.sms)" (ngModelChange)="set(r.sms, $event)" /></span>
+                  <span><input type="checkbox" class="st-check" [attr.aria-label]="r.label + ' par WhatsApp'" [ngModel]="value(r.wa)" (ngModelChange)="set(r.wa, $event)" /></span>
+                </div>
+              }
+            </div>
+            <p class="help">Si les deux sont cochés, WhatsApp est proposé en premier. Les messages partent du téléphone de la salle (lien pré-rempli) : pas d’abonnement SMS à payer dans le MVP.</p>
+          </section>
+        }
+
+        @case ('prospects') {
+          <section class="st-section">
+            <h2 class="card-title">Chance initiale selon la source</h2>
+            <div class="st-grid">
+              @for (f of sourceScores; track f.key) {
+                <div class="field">
+                  <label [for]="'st-' + f.key">{{ f.label }} (%)</label>
+                  <input [id]="'st-' + f.key" class="input-line" type="number" min="0" max="100" [ngModel]="value(f.key)" (ngModelChange)="set(f.key, $event)" />
+                </div>
+              }
+            </div>
+          </section>
+          <section class="st-section">
+            <h2 class="card-title">Évolution de la chance</h2>
+            <div class="st-grid">
+              @for (f of prospectRules; track f.key) {
+                <div class="field">
+                  <label [for]="'st-' + f.key">{{ f.label }} ({{ f.unit }})</label>
+                  <input [id]="'st-' + f.key" class="input-line" type="number" min="0" max="100" [ngModel]="value(f.key)" (ngModelChange)="set(f.key, $event)" />
+                </div>
+              }
+            </div>
+            <p class="help">Chaque nuit à 2 h, la chance des prospects inactifs baisse ; à 0 % la fiche est supprimée et seuls des compteurs anonymes sont gardés.</p>
+            <button type="button" class="btn btn-outline st-run" (click)="runDecay()">Lancer le nettoyage maintenant</button>
+          </section>
+        }
+      }
+
+      @if (tab() !== 'users') {
+        <div class="st-save">
+          <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="save()">{{ saving() ? 'Enregistrement…' : 'Enregistrer' }}</button>
+          @if (saved()) { <span class="st-saved" role="status">{{ saved() }}</span> }
         </div>
-      </div>
-    }
+      }
+    </div>
+  } @else {
+    <p class="empty">Chargement…</p>
   }
 </div>

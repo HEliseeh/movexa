@@ -1,258 +1,210 @@
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { MemberLite, Payment, Plan, SubscriptionState } from '@core/api/api.models';
+import { MemberDto, MembersService } from '@core/api/members.service';
+import { MovexaApi } from '@core/api/movexa-api.service';
 import { ToastService } from '@core/notifications/toast.service';
 import { Fab, FabAction } from '@shared/fab/fab';
-import { MemberForm } from './member-form/member-form';
-import { COACHES, formatIsoDate, PLANS, todayIso } from './members.constants';
-import { MemberDto, MembersService, MemberStatusApi } from './members.service';
+import { fcfa, frDate, initials, STATE_LABELS, STATE_TONES, todayIso } from '@shared/format';
+import { PayDialog } from '@shared/pay-dialog/pay-dialog';
+import { QrCode } from '@shared/qr-code/qr-code';
+import { MemberForm } from '@shared/member-form/member-form';
 
-export type MemberStatus = 'Actif' | 'Expire bientôt' | 'Impayé' | 'Expiré' | 'Gelé';
-export type SortKey = 'name' | 'expiry';
+type SortKey = 'name' | 'end';
 
-/** Une ligne du tableau, prête à afficher */
-export interface Member {
-  /** Identifiant technique (base de données) */
-  id: number;
-  /** Numéro affiché, ex. A-0042 */
-  number: string;
-  name: string;
-  status: MemberStatus;
-  plan: string;
-  coach: string;
-  /** Échéance au format ISO (AAAA-MM-JJ) pour le tri */
-  expiry: string;
-  lastVisit: string;
-  program: string;
-  visits30d: number;
-  phone: string;
-  email: string;
-}
-
-const STATUS_TONES: Record<MemberStatus, string> = {
-  'Actif': 'success',
-  'Expire bientôt': 'warning',
-  'Impayé': 'danger',
-  'Expiré': 'danger',
-  'Gelé': 'neutral',
-};
-
-export const STATUSES = Object.keys(STATUS_TONES) as MemberStatus[];
-
-/** Nombre de jours avant l'échéance à partir duquel un adhérent actif « expire bientôt » */
-const EXPIRING_SOON_DAYS = 7;
-
-const API_STATUS_LABELS: Record<MemberStatusApi, MemberStatus> = {
-  ACTIVE: 'Actif',
-  UNPAID: 'Impayé',
-  EXPIRED: 'Expiré',
-  FROZEN: 'Gelé',
-};
-
-function daysUntil(iso: string): number {
-  return Math.round((Date.parse(iso) - Date.parse(todayIso())) / 86_400_000);
-}
-
-/** Convertit la réponse de l'API en ligne affichable */
-function toMember(dto: MemberDto): Member {
-  let status = API_STATUS_LABELS[dto.status];
-  if (dto.status === 'ACTIVE' && dto.expiryDate && daysUntil(dto.expiryDate) <= EXPIRING_SOON_DAYS) {
-    status = 'Expire bientôt';
-  }
-  const lastVisit = !dto.lastVisitDate
-    ? 'Aucune'
-    : dto.lastVisitDate === todayIso()
-      ? 'Aujourd’hui'
-      : formatIsoDate(dto.lastVisitDate);
-
-  return {
-    id: dto.id,
-    number: dto.memberNumber,
-    name: `${dto.firstName} ${dto.lastName}`,
-    status,
-    plan: dto.plan ?? '—',
-    coach: dto.coach ?? '—',
-    expiry: dto.expiryDate ?? '',
-    lastVisit,
-    program: dto.program ?? 'Aucun programme',
-    visits30d: dto.visitsLast30Days,
-    phone: dto.phone ?? 'Non renseigné',
-    email: dto.email ?? 'Non renseigné',
-  };
-}
-
+/**
+ * Liste des membres (module 1) : recherche instantanée par nom ou téléphone, filtres par statut et
+ * formule, tri, export. Toute la liste est chargée puis filtrée dans le navigateur : instantané
+ * pour quelques centaines de membres (au-delà, filtrer côté serveur).
+ */
 @Component({
   selector: 'app-members',
-  imports: [FormsModule, RouterLink, Fab, MemberForm],
+  imports: [FormsModule, RouterLink, Fab, MemberForm, PayDialog, QrCode],
   templateUrl: './members.html',
   styleUrl: './members.css',
 })
 export class Members implements OnInit {
   private readonly membersService = inject(MembersService);
+  private readonly api = inject(MovexaApi);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly statuses = STATUSES;
-  readonly plans = PLANS;
-  readonly coaches = COACHES;
+  readonly states = Object.keys(STATE_LABELS) as SubscriptionState[];
+  readonly stateLabels = STATE_LABELS;
+  readonly tones = STATE_TONES;
+  readonly frDate = frDate;
+  readonly fcfa = fcfa;
+  readonly initials = initials;
 
   // ---- Filtres et tri ----
   readonly query = signal('');
-  readonly statusFilter = signal('');
+  readonly stateFilter = signal<SubscriptionState | ''>('');
   readonly planFilter = signal('');
   readonly sortKey = signal<SortKey | null>(null);
   readonly sortDir = signal<1 | -1>(1);
-
-  /** Fiche dépliée (id de l'adhérent) */
   readonly openId = signal<number | null>(null);
 
-  // ---- Données serveur ----
-  /** Les DTO bruts sont conservés : le formulaire de modification en a besoin */
+  // ---- Données ----
   private readonly loaded = signal<MemberDto[]>([]);
-  private readonly totalOnServer = signal(0);
+  readonly total = signal(0);
+  readonly plans = signal<Plan[]>([]);
   readonly loading = signal(true);
   readonly loadError = signal<string | null>(null);
 
-  // ---- Pop-up formulaire ----
+  // ---- Pop-up ----
   /** undefined = fermé, null = création, MemberDto = modification */
   readonly editing = signal<MemberDto | null | undefined>(undefined);
-  readonly formOpen = computed(() => this.editing() !== undefined);
-
-  private readonly all = computed(() => this.loaded().map(toMember));
+  readonly paying = signal<MemberLite | null>(null);
 
   readonly rows = computed(() => {
     const q = this.query().trim().toLowerCase();
-    const status = this.statusFilter();
+    const digits = q.replace(/\D/g, '');
+    const state = this.stateFilter();
     const plan = this.planFilter();
     const key = this.sortKey();
     const dir = this.sortDir();
-
-    const list = this.all().filter(
+    const list = this.loaded().filter(
       m =>
-        (!q || m.name.toLowerCase().includes(q) || m.number.toLowerCase().includes(q)) &&
-        (!status || m.status === status) &&
+        (!q ||
+          `${m.firstName} ${m.lastName}`.toLowerCase().includes(q) ||
+          `${m.lastName} ${m.firstName}`.toLowerCase().includes(q) ||
+          m.memberNumber.toLowerCase().includes(q) ||
+          (digits.length >= 2 && (m.phone ?? '').replace(/\D/g, '').includes(digits))) &&
+        (!state || m.state === state) &&
         (!plan || m.plan === plan),
     );
     if (!key) return list;
-    return [...list].sort((a, b) => a[key].localeCompare(b[key], 'fr') * dir);
+    const value = (m: MemberDto) => (key === 'name' ? `${m.lastName} ${m.firstName}` : (m.expiryDate ?? '9999'));
+    return [...list].sort((a, b) => value(a).localeCompare(value(b), 'fr') * dir);
   });
 
-  readonly totalCount = computed(() => this.totalOnServer());
-
-  // ---- FAB actions ----
   readonly fabActions: FabAction[] = [
-    { id: 'add-member', label: 'Ajouter un adhérent', iconPath: 'M12 5v14M5 12h14' },
-    { id: 'send-qr', label: 'Envoyer les QR codes', iconPath: 'M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h6v6h-6z' },
-    { id: 'remind', label: 'Relancer la sélection', iconPath: 'M22 2L11 13M22 2l-7 20-4-9-9-4z' },
-    { id: 'import', label: 'Importer un listing', iconPath: 'M12 21V9M7 14l5-5 5 5M4 3h16' },
+    { id: 'add', label: 'Nouveau membre', iconPath: 'M12 5v14M5 12h14' },
+    { id: 'import', label: 'Importer une liste', iconPath: 'M12 21V9M7 14l5-5 5 5M4 3h16' },
+    { id: 'remind', label: 'Relancer les expirés', iconPath: 'M22 2L11 13M22 2l-7 20-4-9-9-4z' },
+    { id: 'export', label: 'Exporter les données', iconPath: 'M12 3v12M7 10l5 5 5-5M4 21h16' },
   ];
 
   ngOnInit(): void {
     this.load();
+    this.api.plans(true).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(p => this.plans.set(p));
+    // /members?new=1 ouvre directement l'inscription (depuis l'accueil ou le tableau de bord)
+    if (this.route.snapshot.queryParamMap.get('new')) this.editing.set(null);
   }
 
   load(): void {
     this.loading.set(true);
     this.loadError.set(null);
-    // Pour l'instant on charge tout d'un coup et on filtre côté navigateur.
-    // Avec des milliers de membres, il faudra paginer et filtrer côté serveur.
     this.membersService
-      .list(0, 200)
+      .list(0, 1000)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: ({ members, total }) => {
           this.loaded.set(members);
-          this.totalOnServer.set(total);
-          this.openId.set(members[0]?.id ?? null);
+          this.total.set(total);
           this.loading.set(false);
         },
         error: () => {
-          this.loadError.set('Impossible de charger les adhérents. Vérifiez que le backend est démarré.');
+          this.loadError.set('Impossible de charger les membres. Vérifiez que le backend est démarré.');
           this.loading.set(false);
         },
       });
   }
 
-  // ---- Handlers liste ----
-  tone(status: MemberStatus): string {
-    return STATUS_TONES[status];
-  }
-
-  formatDate(iso: string): string {
-    return formatIsoDate(iso);
+  lastVisit(m: MemberDto): string {
+    if (!m.lastVisitDate) return 'Aucune';
+    return m.lastVisitDate === todayIso() ? 'Aujourd’hui' : frDate(m.lastVisitDate);
   }
 
   toggleSort(key: SortKey): void {
-    if (this.sortKey() === key) {
-      this.sortDir.update(d => (d === 1 ? -1 : 1));
-    } else {
+    if (this.sortKey() === key) this.sortDir.update(d => (d === 1 ? -1 : 1));
+    else {
       this.sortKey.set(key);
       this.sortDir.set(1);
     }
   }
 
   sortIcon(key: SortKey): string {
-    if (this.sortKey() !== key) return '↕';
-    return this.sortDir() === 1 ? '↑' : '↓';
+    return this.sortKey() !== key ? '↕' : this.sortDir() === 1 ? '↑' : '↓';
   }
 
   resetFilters(): void {
     this.query.set('');
-    this.statusFilter.set('');
+    this.stateFilter.set('');
     this.planFilter.set('');
     this.sortKey.set(null);
-    this.sortDir.set(1);
   }
 
   toggleRow(id: number): void {
     this.openId.update(cur => (cur === id ? null : id));
   }
 
+  renew(m: MemberDto): void {
+    this.paying.set({
+      id: m.id,
+      memberNumber: m.memberNumber,
+      firstName: m.firstName,
+      lastName: m.lastName,
+      phone: m.phone,
+      planName: m.plan,
+      endDate: m.expiryDate,
+      state: m.state,
+      daysLeft: m.daysLeft,
+      qrToken: m.qrToken,
+    });
+  }
+
+  onPaid(p: Payment): void {
+    this.paying.set(null);
+    this.toast.success(p.status === 'PENDING' ? `Lien de paiement créé pour ${p.memberName}.` : `${p.memberName} : ${p.planName} encaissé.`);
+    this.load();
+  }
+
   onFabAction(action: FabAction): void {
-    if (action.id === 'add-member') {
-      this.openCreate();
-      return;
-    }
-    console.log('FAB action :', action.id);
-    // TODO: brancher les autres actions sur les services
+    if (action.id === 'add') this.editing.set(null);
+    if (action.id === 'import') this.router.navigate(['/members/import']);
+    if (action.id === 'remind') this.router.navigate(['/reminders']);
+    if (action.id === 'export') this.exportCsv();
   }
 
-  // ---- CRUD ----
-  openCreate(): void {
-    this.editing.set(null);
-  }
-
-  openEdit(id: number): void {
-    const dto = this.loaded().find(m => m.id === id);
-    if (dto) this.editing.set(dto);
-  }
-
-  closeForm(): void {
-    this.editing.set(undefined);
-  }
-
-  /** Le formulaire a enregistré : on met la liste à jour sans tout recharger */
   onSaved({ member, created }: { member: MemberDto; created: boolean }): void {
     const name = `${member.firstName} ${member.lastName}`;
+    this.editing.set(undefined);
     if (created) {
-      this.loaded.update(list => [member, ...list]);
-      this.totalOnServer.update(n => n + 1);
-      this.resetFilters(); // pour que le nouvel adhérent soit visible en haut de liste
-      this.toast.success(`${name} a été ajouté(e) aux adhérents.`);
+      this.resetFilters();
+      this.toast.success(`${name} est inscrit(e).`);
+      this.load();
     } else {
       this.loaded.update(list => list.map(m => (m.id === member.id ? member : m)));
       this.toast.success(`Modifications enregistrées pour ${name}.`);
     }
     this.openId.set(member.id);
-    this.closeForm();
   }
 
   onDeleted(member: MemberDto): void {
     this.loaded.update(list => list.filter(m => m.id !== member.id));
-    this.totalOnServer.update(n => Math.max(0, n - 1));
-    if (this.openId() === member.id) this.openId.set(null);
-    this.toast.success(`${member.firstName} ${member.lastName} a été supprimé(e).`);
-    this.closeForm();
+    this.total.update(n => Math.max(0, n - 1));
+    this.editing.set(undefined);
+    this.toast.success(`${member.firstName} ${member.lastName} a été archivé(e).`);
+  }
+
+  /** Export CSV (séparateur « ; » et BOM UTF-8 : s'ouvre correctement dans Excel en français) */
+  exportCsv(): void {
+    const header = ['Numéro', 'Prénom', 'Nom', 'Téléphone', 'E-mail', 'Statut', 'Formule', 'Fin', 'Inscrit le', 'Dernière visite'];
+    const lines = this.rows().map(m =>
+      [m.memberNumber, m.firstName, m.lastName, m.phone ?? '', m.email ?? '', STATE_LABELS[m.state], m.plan ?? '', frDate(m.expiryDate), frDate(m.joinDate), frDate(m.lastVisitDate)]
+        .map(v => `"${String(v).replace(/"/g, '""')}"`)
+        .join(';'),
+    );
+    const blob = new Blob(['﻿' + [header.join(';'), ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `membres-${todayIso()}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
 }
