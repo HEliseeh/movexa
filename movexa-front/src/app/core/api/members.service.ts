@@ -25,6 +25,7 @@ export interface MemberDto {
   /** Formule en cours */
   plan: string | null;
   coach: string | null;
+  coachId: number | null;
   program: string | null;
   subscriptionStartDate: string;
   autoRenew: boolean;
@@ -49,6 +50,8 @@ export interface MemberPayload {
   phone: string;
   email: string | null;
   notes: string | null;
+  /** Coach suivi (null = aucun) */
+  coachId?: number | null;
   /** Création uniquement : formule et paiement en une seule fois */
   planId?: number | null;
   paymentMethod?: PaymentMethod | null;

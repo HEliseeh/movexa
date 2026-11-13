@@ -70,6 +70,9 @@ public class MemberDTO implements Serializable {
     @Size(max = 100)
     private String coach;
 
+    /** Coach suivi (fiche Coach) ; le nom « coach » est rempli par le serveur */
+    private Long coachId;
+
     @Size(max = 150)
     private String program;
 

@@ -16,14 +16,31 @@
   }
 
   <div class="tabs" role="tablist" aria-label="Vues">
-    <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'queue'" (click)="tab.set('queue')">Aujourd’hui</button>
-    <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'history'" (click)="tab.set('history')">Historique et résultats</button>
+    @if (selection() !== null) {
+      <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'selection'" (click)="setTab('selection')">Sélection ({{ selection()!.length }})</button>
+    }
+    <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'queue'" (click)="setTab('queue')">Aujourd’hui</button>
+    <button type="button" class="tab" role="tab" [attr.aria-selected]="tab() === 'history'" (click)="setTab('history')">Historique et résultats</button>
   </div>
 
-  @if (tab() === 'queue') {
+  @if (tab() === 'selection') {
+    <div class="alert rm-selection-info" role="status">
+      @if (selection()!.length) {
+        Membres choisis dans la liste : {{ selectionTotal() - selection()!.length }} relance(s) envoyée(s) sur {{ selectionTotal() }}.
+        Après chaque envoi, le membre suivant s’affiche.
+      } @else if (selectionTotal()) {
+        Toutes les relances de la sélection sont envoyées.
+      } @else {
+        Aucun des membres choisis ne peut être relancé.
+      }
+      <button type="button" class="link-btn" (click)="closeSelection()">Fermer la sélection</button>
+    </div>
+  }
+
+  @if (tab() !== 'history') {
     <div class="rm-columns">
       <section class="card card--flush rm-list">
-        @for (q of queue(); track q.memberId) {
+        @for (q of current(); track q.memberId) {
           <button type="button" class="rm-row" [attr.aria-pressed]="q.memberId === selectedId()" (click)="select(q)">
             <span class="status-dot" [class.status-dot--warning]="!q.expired" [class.status-dot--danger]="q.expired"></span>
             <span class="rm-row-main">
@@ -33,7 +50,7 @@
             <span class="rm-amount">{{ fcfa(q.amount) }}</span>
           </button>
         } @empty {
-          <p class="empty">Aucune relance à faire aujourd’hui.</p>
+          <p class="empty">{{ tab() === 'selection' ? 'Plus aucune relance dans la sélection.' : 'Aucune relance à faire aujourd’hui.' }}</p>
         }
       </section>
 

@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="1dafbd96-bccf-4a9c-a85f-2ff59c2a2a35" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/movexa-gateway/src/main/docker/app.yml" beforeDir="false" afterPath="$PROJECT_DIR$/movexa-gateway/src/main/docker/app.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -76,6 +75,7 @@
       <workItem from="1794387765374" duration="593000" />
       <workItem from="1794402460508" duration="592000" />
       <workItem from="1794478354425" duration="589000" />
+      <workItem from="1794557052803" duration="591000" />
     </task>
     <servers />
   </component>

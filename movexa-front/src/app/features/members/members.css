@@ -10,11 +10,11 @@
 }
 
 .members-grid {
-  min-width: 1000px;
+  min-width: 1040px;
 }
 
 .members-grid .grid-row {
-  grid-template-columns: 28px 1.8fr 1.1fr 1.2fr 1.1fr 1fr 1fr 1fr;
+  grid-template-columns: 24px 28px 1.8fr 1.1fr 1.2fr 1.1fr 1fr 1fr 1fr;
 }
 
 .member-row {
@@ -44,7 +44,7 @@
 }
 
 .member-detail {
-  padding: var(--space-2) var(--space-5) var(--space-5) 62px;
+  padding: var(--space-2) var(--space-5) var(--space-5) 106px;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -100,4 +100,63 @@
 
 .member-name:hover {
   text-decoration: underline;
+}
+
+/* ---- Page à hauteur d'écran : l'en-tête et les filtres restent visibles, la liste défile ---- */
+.members-page {
+  height: 100%;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+.members-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.members-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-surface);
+}
+
+.head-grow {
+  flex: 1 1 auto;
+}
+
+/* ---- Sélection ---- */
+.select-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.select-box {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--color-text);
+  cursor: pointer;
+}
+
+.member-row--selected {
+  background: var(--color-surface-selected);
+}
+
+.selection-bar {
+  padding: 10px var(--space-5);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  background: var(--color-surface-selected);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.selection-note {
+  flex-basis: 100%;
 }

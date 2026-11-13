@@ -57,6 +57,10 @@ export const routes: Routes = [
         loadComponent: () => import('@features/subscriptions/subscriptions').then(m => m.Subscriptions),
       },
       {
+        path: 'coaches',
+        loadComponent: () => import('@features/coaches/coaches').then(m => m.Coaches),
+      },
+      {
         path: 'reminders',
         loadComponent: () => import('@features/reminders/reminders').then(m => m.Reminders),
       },
@@ -75,8 +79,8 @@ export const routes: Routes = [
         loadComponent: () => import('@features/forbidden/forbidden').then(m => m.Forbidden),
       },
 
-      // Le gérant arrive sur le tableau de bord, le réceptionniste est renvoyé vers l'accueil
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      // Tout le monde arrive sur l'accueil (le tableau de bord reste dans le menu du gérant)
+      { path: '', redirectTo: 'reception', pathMatch: 'full' },
     ],
   },
 

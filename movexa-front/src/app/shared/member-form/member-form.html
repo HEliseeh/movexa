@@ -131,6 +131,17 @@
         }
 
         <section class="mf-section">
+          <h3 class="mf-section-title">Coach</h3>
+          <label for="mf-coach" class="sr-only">Coach suivi</label>
+          <select id="mf-coach" class="input-line" formControlName="coachId">
+            <option [ngValue]="0">Aucun coach</option>
+            @for (c of coaches(); track c.id) {
+              <option [ngValue]="c.id">{{ c.firstName }} {{ c.lastName ?? '' }}{{ c.disciplines.length ? ' · ' + c.disciplines.slice(0, 3).join(', ') : '' }}{{ c.active ? '' : ' (inactif)' }}</option>
+            }
+          </select>
+        </section>
+
+        <section class="mf-section">
           <h3 class="mf-section-title">Notes internes</h3>
           <label for="mf-notes" class="sr-only">Notes internes</label>
           <textarea id="mf-notes" class="textarea-box" rows="2" maxlength="300" formControlName="notes"

@@ -1,49 +1,72 @@
-<div class="page-sheet">
+<div class="page-sheet members-page">
 
   <!-- ===== EN-TÊTE ===== -->
   <header class="sheet-header">
     <div class="header-left">
       <h1 class="page-title">Membres</h1>
-      <button type="button" class="btn btn-primary" (click)="resetFilters()">Réinitialiser tous les filtres</button>
+      <button type="button" class="btn btn-outline" [disabled]="!hasFilters()" (click)="resetFilters()">Réinitialiser les filtres</button>
     </div>
     <div class="page-actions">
+      <a routerLink="/reminders" class="btn btn-outline">Relancer</a>
       <a routerLink="/members/import" class="btn btn-outline">Importer Excel / CSV</a>
-      <button type="button" class="btn btn-outline" (click)="exportCsv()">Exporter les données</button>
+      <button type="button" class="btn btn-outline" (click)="exportCsv()">Exporter</button>
       <button type="button" class="btn btn-primary" (click)="editing.set(null)">Nouveau membre</button>
     </div>
   </header>
 
-  <!-- ===== LISTE ===== -->
-  <div class="grid-scroll">
+  <!-- ===== ACTIONS SUR LES MEMBRES COCHÉS ===== -->
+  @if (selectedMembers().length) {
+    <div class="selection-bar" role="region" aria-label="Membres sélectionnés">
+      <span class="text-strong">{{ selectedMembers().length }} membre(s) sélectionné(s)</span>
+      <button type="button" class="btn btn-primary" [disabled]="!remindable().length" (click)="remindSelected()"
+              [attr.title]="remindable().length ? null : 'Aucun des membres cochés ne peut être relancé'">
+        {{ remindable().length === selectedMembers().length ? 'Relancer' : 'Relancer ' + remindable().length + ' sur ' + selectedMembers().length }}
+      </button>
+      <button type="button" class="btn btn-outline" (click)="exportCsv(selectedMembers(), '-selection')">Exporter la sélection</button>
+      <button type="button" class="link-btn" (click)="clearSelection()">Tout désélectionner</button>
+      @if (notRemindable().length) {
+        <span class="help selection-note">
+          {{ remindable().length ? 'Ne seront pas relancés' : 'Relance impossible' }} : {{ notRemindableText() }}.
+          On relance un membre joignable dont l’abonnement expire bientôt ou est expiré.
+        </span>
+      }
+    </div>
+  }
+
+  <!-- ===== LISTE : l'en-tête des colonnes (filtres) reste figé, seules les lignes défilent ===== -->
+  <div class="grid-scroll members-scroll">
     <div class="members-grid">
-      <div class="grid-row grid-row--head">
+      <div class="grid-row grid-row--head members-head">
+        <span class="select-cell">
+          <input type="checkbox" class="select-box" aria-label="Sélectionner toutes les lignes affichées"
+                 [checked]="allVisibleSelected()" [indeterminate]="someVisibleSelected()" (change)="toggleSelectVisible()" />
+        </span>
         <span></span>
         <div class="head-filter">
-          <input class="input-line input-line--filter" aria-label="Filtrer par nom ou téléphone" placeholder="Membre ou téléphone"
+          <input class="input-line input-line--filter" aria-label="Filtrer par nom ou numéro de membre" placeholder="Membre"
                  [ngModel]="query()" (ngModelChange)="query.set($event)" />
           <button type="button" class="sort-btn" aria-label="Trier par nom" (click)="toggleSort('name')">{{ sortIcon('name') }}</button>
         </div>
-        <span class="head-label">Téléphone</span>
-        <select class="input-line input-line--filter" aria-label="Filtrer par statut" [ngModel]="stateFilter()" (ngModelChange)="stateFilter.set($event)">
-          <option value="">Statut</option>
-          @for (s of states; track s) { <option [value]="s">{{ stateLabels[s] }}</option> }
-        </select>
-        <select class="input-line input-line--filter" aria-label="Filtrer par formule" [ngModel]="planFilter()" (ngModelChange)="planFilter.set($event)">
-          <option value="">Formule</option>
-          @for (p of plans(); track p.id) { <option [value]="p.name">{{ p.name }}</option> }
-        </select>
+        <input class="input-line input-line--filter" aria-label="Filtrer par téléphone" placeholder="Téléphone" inputmode="numeric"
+               [ngModel]="phoneQuery()" (ngModelChange)="phoneQuery.set($event)" />
+        <app-multi-filter label="Statut" [options]="stateOptions" [(selected)]="stateFilter" />
+        <app-multi-filter label="Formule" [options]="planOptions()" [(selected)]="planFilter" />
         <div class="head-filter">
-          <span class="head-label">Fin</span>
+          <app-date-filter class="head-grow" label="Fin" direction="future" [(range)]="endRange" />
           <button type="button" class="sort-btn" aria-label="Trier par date de fin" (click)="toggleSort('end')">{{ sortIcon('end') }}</button>
         </div>
-        <span class="head-label">Inscrit le</span>
-        <span class="head-label">Dernière visite</span>
+        <app-date-filter label="Inscrit le" [(range)]="joinRange" />
+        <app-date-filter label="Dernière visite" [(range)]="visitRange" />
       </div>
 
       <div>
         @for (m of rows(); track m.id) {
           <div class="stripe">
-            <div class="grid-row member-row">
+            <div class="grid-row member-row" [class.member-row--selected]="isSelected(m.id)">
+              <span class="select-cell">
+                <input type="checkbox" class="select-box" [attr.aria-label]="'Sélectionner ' + m.firstName + ' ' + m.lastName"
+                       [checked]="isSelected(m.id)" (change)="toggleSelect(m.id)" />
+              </span>
               <button type="button" class="row-toggle" [attr.aria-expanded]="openId() === m.id"
                       [attr.aria-label]="(openId() === m.id ? 'Replier ' : 'Déplier ') + m.firstName + ' ' + m.lastName" (click)="toggleRow(m.id)">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -66,6 +89,7 @@
                 <div class="qr-box"><app-qr-code [value]="m.qrToken" [size]="96" /></div>
                 <dl class="detail-list">
                   <div><dt>N° de membre</dt><dd>{{ m.memberNumber }}</dd></div>
+                  <div><dt>Coach</dt><dd>{{ m.coach ?? 'Aucun' }}</dd></div>
                   <div><dt>Visites sur 30 jours</dt><dd>{{ m.visitsLast30Days }}</dd></div>
                   <div><dt>Notes</dt><dd>{{ m.notes ?? 'Aucune' }}</dd></div>
                 </dl>
@@ -90,10 +114,8 @@
     </div>
   </div>
 
-  <div class="card-foot">{{ rows().length }} lignes affichées sur {{ total() }} membres</div>
+  <div class="card-foot">{{ rows().length }} lignes affichées sur {{ total() }} membres{{ selectedMembers().length ? ' · ' + selectedMembers().length + ' sélectionné(s)' : '' }}</div>
 </div>
-
-<app-fab [actions]="fabActions" (actionTriggered)="onFabAction($event)" />
 
 @if (editing() !== undefined) {
   <app-member-form [member]="editing() ?? null" (saved)="onSaved($event)" (deleted)="onDeleted($event)" (closed)="editing.set(undefined)" />

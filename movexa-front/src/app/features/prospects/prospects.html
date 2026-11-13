@@ -46,8 +46,8 @@
     <!-- ===== LISTE ===== -->
     <section class="card card--flush ps-list">
       <div class="tabs ps-tabs" role="tablist" aria-label="Listes">
-        <button type="button" class="tab" role="tab" [attr.aria-selected]="scope() === 'TODAY'" (click)="setScope('TODAY')">À relancer aujourd’hui</button>
         <button type="button" class="tab" role="tab" [attr.aria-selected]="scope() === 'OPEN'" (click)="setScope('OPEN')">Tous en cours</button>
+        <button type="button" class="tab" role="tab" [attr.aria-selected]="scope() === 'TODAY'" (click)="setScope('TODAY')">À relancer aujourd’hui</button>
         <button type="button" class="tab" role="tab" [attr.aria-selected]="scope() === 'CLOSED'" (click)="setScope('CLOSED')">Convertis et perdus</button>
       </div>
       @for (p of list(); track p.id) {

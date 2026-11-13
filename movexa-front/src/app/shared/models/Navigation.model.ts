@@ -67,6 +67,12 @@ export const MENU_ITEMS: MenuStep[] = [
     route:    ['/subscriptions'],
   },
   {
+    id:       'coaches',
+    label:    'Coachs',
+    iconPath: 'M6.5 6.5h11M6.5 17.5h11M3 9v6M21 9v6M6 5v14M18 5v14M12 6.5v11',
+    route:    ['/coaches'],
+  },
+  {
     id:       'reminders',
     label:    'Relances',
     iconPath: 'M22 2L11 13M22 2l-7 20-4-9-9-4z',

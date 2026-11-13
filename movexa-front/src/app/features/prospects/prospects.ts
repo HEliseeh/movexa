@@ -34,7 +34,7 @@ export class Prospects implements OnInit {
   readonly statusLabels = PROSPECT_STATUS_LABELS;
   readonly frDate = frDate;
 
-  readonly scope = signal<Scope>('TODAY');
+  readonly scope = signal<Scope>('OPEN');
   readonly list = signal<Prospect[]>([]);
   readonly allOpen = signal<Prospect[]>([]);
   readonly selectedId = signal<number | null>(null);

@@ -1,6 +1,7 @@
 package com.mycompany.myapp.service;
 
 import com.mycompany.myapp.domain.CheckIn;
+import com.mycompany.myapp.domain.Coach;
 import com.mycompany.myapp.domain.Member;
 import com.mycompany.myapp.domain.Payment;
 import com.mycompany.myapp.domain.Plan;
@@ -58,6 +59,7 @@ public class MemberService {
     private final SubscriptionRepository subscriptionRepository;
     private final ReminderService reminderService;
     private final ProspectService prospectService;
+    private final CoachService coachService;
 
     public MemberService(
         MemberRepository memberRepository,
@@ -69,7 +71,8 @@ public class MemberService {
         CheckInRepository checkInRepository,
         SubscriptionRepository subscriptionRepository,
         ReminderService reminderService,
-        ProspectService prospectService
+        ProspectService prospectService,
+        CoachService coachService
     ) {
         this.memberRepository = memberRepository;
         this.userRepository = userRepository;
@@ -81,6 +84,7 @@ public class MemberService {
         this.subscriptionRepository = subscriptionRepository;
         this.reminderService = reminderService;
         this.prospectService = prospectService;
+        this.coachService = coachService;
     }
 
     /** Liste paginée des membres non archivés, avec statut et nombre de visites sur 30 jours. */
@@ -178,6 +182,7 @@ public class MemberService {
         member.setUser(user);
         member.setStatus(MemberStatus.ACTIVE);
         memberMapper.update(member, dto);
+        applyCoach(member, dto.getCoachId());
         applyDerivedFields(member);
 
         member = memberRepository.saveAndFlush(member);
@@ -207,6 +212,7 @@ public class MemberService {
                 checkEmailAvailable(dto.getEmail(), member.getUser().getId());
                 checkPhoneAvailable(dto.getPhone(), member.getId());
                 memberMapper.update(member, dto);
+                applyCoach(member, dto.getCoachId());
                 applyDerivedFields(member);
                 return views.enrich(memberMapper.toDto(member), views.threshold());
             });
@@ -231,6 +237,18 @@ public class MemberService {
             result.put((Long) row[0], (Long) row[1]);
         }
         return result;
+    }
+
+    /** Coach choisi dans la fiche : on garde le lien et on recopie son nom pour l'affichage */
+    private void applyCoach(Member member, Long coachId) {
+        if (coachId == null) {
+            member.setCoachId(null);
+            member.setCoach(null);
+        } else if (!coachId.equals(member.getCoachId()) || member.getCoach() == null) {
+            Coach coach = coachService.require(coachId);
+            member.setCoachId(coach.getId());
+            member.setCoach(coach.getFullName());
+        }
     }
 
     /** Un champ texte vide envoyé par le formulaire devient null (sinon "" violerait l'unicité de l'e-mail). */

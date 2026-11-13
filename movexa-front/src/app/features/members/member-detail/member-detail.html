@@ -11,7 +11,7 @@
       <span class="avatar avatar--lg" aria-hidden="true">{{ initials(m.firstName, m.lastName) }}</span>
       <div class="md-head-text">
         <h1 class="page-title">{{ m.firstName }} {{ m.lastName }}</h1>
-        <p class="page-subtitle">{{ m.phone }} · N° {{ m.memberNumber }} · inscrit le {{ frDate(m.joinDate) }}</p>
+        <p class="page-subtitle">{{ m.phone }} · N° {{ m.memberNumber }} · inscrit le {{ frDate(m.joinDate) }}{{ m.coach ? ' · coach : ' + m.coach : '' }}</p>
         <span class="state-pill" [class]="'state-pill state-pill--' + tones[m.state]"><span class="status-dot" [class]="'status-dot status-dot--' + tones[m.state]"></span>{{ statusText() }}</span>
       </div>
       <div class="page-actions">

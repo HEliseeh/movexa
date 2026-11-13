@@ -6,6 +6,8 @@ import {
   CashClosure,
   CashDay,
   CheckIn,
+  Coach,
+  CoachPayload,
   CheckInRequest,
   Dashboard,
   GatewayUser,
@@ -55,6 +57,23 @@ export class MovexaApi {
   }
   updatePlan(id: number, p: PlanPayload): Observable<Plan> {
     return this.http.put<Plan>(`${this.api}/plans/${id}`, p);
+  }
+
+  // ---- Coachs ----
+  coaches(): Observable<Coach[]> {
+    return this.http.get<Coach[]>(`${this.api}/coaches`);
+  }
+  coachDisciplines(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.api}/coaches/disciplines`);
+  }
+  createCoach(c: CoachPayload): Observable<Coach> {
+    return this.http.post<Coach>(`${this.api}/coaches`, c);
+  }
+  updateCoach(id: number, c: CoachPayload): Observable<Coach> {
+    return this.http.put<Coach>(`${this.api}/coaches/${id}`, c);
+  }
+  deleteCoach(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.api}/coaches/${id}`);
   }
 
   // ---- Membres (recherche et cache) ----
@@ -107,6 +126,10 @@ export class MovexaApi {
   // ---- Relances membres ----
   reminderQueue(): Observable<ReminderQueueItem[]> {
     return this.http.get<ReminderQueueItem[]>(`${this.api}/reminders/queue`);
+  }
+  /** Messages prêts pour des membres choisis à la main (cases cochées dans la liste) */
+  reminderCompose(memberIds: number[]): Observable<ReminderQueueItem[]> {
+    return this.http.post<ReminderQueueItem[]>(`${this.api}/reminders/compose`, memberIds);
   }
   reminderSent(body: { memberId: number; rule: ReminderRule; channel: ReminderChannel; targetEndDate: string | null; message: string }): Observable<Reminder> {
     return this.http.post<Reminder>(`${this.api}/reminders`, body);

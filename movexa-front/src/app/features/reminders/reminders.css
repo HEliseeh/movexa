@@ -82,3 +82,9 @@
   color: var(--color-text);
   text-decoration: none;
 }
+
+.rm-selection-info {
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}

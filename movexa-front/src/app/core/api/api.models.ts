@@ -24,6 +24,23 @@ export interface Plan {
 
 export type PlanPayload = Omit<Plan, 'id' | 'memberCount'> & { id?: number };
 
+/** Coach de la salle et ses disciplines */
+export interface Coach {
+  id: number;
+  firstName: string;
+  lastName: string | null;
+  phone: string | null;
+  email: string | null;
+  notes: string | null;
+  active: boolean;
+  disciplines: string[];
+  /** Membres suivis (lecture seule) */
+  memberCount: number | null;
+  createdAt: string | null;
+}
+
+export type CoachPayload = Omit<Coach, 'id' | 'memberCount' | 'createdAt'>;
+
 /** Membre en version légère (recherche, accueil, pointage, cache hors ligne) */
 export interface MemberLite {
   id: number;
