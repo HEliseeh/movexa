@@ -1,0 +1,108 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.cf-btn {
+  width: 100%;
+  height: 36px;
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  border: 0;
+  border-bottom: 1px solid var(--color-input-line);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cf-btn--active {
+  color: var(--color-text);
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.cf-btn-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cf-caret {
+  flex: 0 0 auto;
+  font-size: 12px;
+}
+
+.cf-panel {
+  position: fixed;
+  z-index: var(--z-dropdown);
+  width: 260px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  color: var(--color-text);
+  font-weight: var(--font-weight-regular);
+}
+
+.cf-option {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.cf-option input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-text);
+}
+
+.cf-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cf-preset {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.cf-preset:hover {
+  border-color: var(--color-primary);
+}
+
+.cf-date {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.cf-actions {
+  display: flex;
+  justify-content: space-between;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border-soft);
+}

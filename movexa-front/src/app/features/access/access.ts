@@ -10,6 +10,7 @@ import { OfflineService } from '@core/offline/offline.service';
 import { ToastService } from '@core/notifications/toast.service';
 import { apiError, clientId, frDate, hour, STATE_TONES, todayIso } from '@shared/format';
 import { PayDialog } from '@shared/pay-dialog/pay-dialog';
+import { FilterOption, matchesAny, MultiFilter } from '@shared/column-filter/column-filter';
 
 /** Une ligne du journal du jour (venue du serveur ou en attente de synchronisation) */
 interface JournalRow {
@@ -42,7 +43,7 @@ const RESULT_LABELS: Record<CheckInResult, string> = {
  */
 @Component({
   selector: 'app-access',
-  imports: [FormsModule, RouterLink, PayDialog],
+  imports: [FormsModule, RouterLink, PayDialog, MultiFilter],
   templateUrl: './access.html',
   styleUrl: './access.css',
 })
@@ -89,6 +90,50 @@ export class Access implements OnInit, OnDestroy {
     }));
     return [...pending.reverse(), ...this.journal()];
   });
+
+  // ---- Filtres du journal (une colonne = un filtre) ----
+  readonly timeFilter = signal('');
+  readonly nameFilter = signal('');
+  readonly methodFilter = signal<string[]>([]);
+  readonly resultFilter = signal<string[]>([]);
+  readonly syncFilter = signal<string[]>([]);
+  readonly methodOptions: FilterOption[] = [
+    { value: 'QR', label: 'QR' },
+    { value: 'SEARCH', label: 'Recherche' },
+  ];
+  readonly resultOptions: FilterOption[] = (Object.keys(RESULT_LABELS) as CheckInResult[]).map(r => ({ value: r, label: RESULT_LABELS[r] }));
+  readonly syncOptions: FilterOption[] = [
+    { value: 'pending', label: 'En attente' },
+    { value: 'synced', label: 'Synchronisé' },
+  ];
+
+  readonly filteredRows = computed(() => {
+    const time = this.timeFilter().trim().replace('h', ':');
+    const name = this.nameFilter().trim().toLowerCase();
+    const methods = this.methodFilter();
+    const results = this.resultFilter();
+    const syncs = this.syncFilter();
+    return this.rows().filter(
+      r =>
+        (!time || r.time.startsWith(time)) &&
+        (!name || r.name.toLowerCase().includes(name)) &&
+        matchesAny(methods, r.method) &&
+        matchesAny(results, r.result) &&
+        matchesAny(syncs, r.pending ? 'pending' : 'synced'),
+    );
+  });
+
+  readonly journalFiltered = computed(
+    () => !!this.timeFilter().trim() || !!this.nameFilter().trim() || [this.methodFilter(), this.resultFilter(), this.syncFilter()].some(f => f.length > 0),
+  );
+
+  resetJournalFilters(): void {
+    this.timeFilter.set('');
+    this.nameFilter.set('');
+    this.methodFilter.set([]);
+    this.resultFilter.set([]);
+    this.syncFilter.set([]);
+  }
 
   readonly entries = computed(() => this.rows().filter(r => r.result !== 'REFUSED').length);
   readonly refused = computed(() => this.rows().filter(r => r.result === 'REFUSED').length);

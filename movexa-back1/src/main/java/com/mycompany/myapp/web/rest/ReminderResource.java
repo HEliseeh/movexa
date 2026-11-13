@@ -26,6 +26,14 @@ public class ReminderResource {
         return reminderService.queue();
     }
 
+    /** POST /api/reminders/compose : messages prêts pour les membres cochés dans la liste (max 200). */
+    @PostMapping("/compose")
+    public List<ReminderQueueItem> compose(@RequestBody List<Long> memberIds) {
+        if (memberIds == null || memberIds.isEmpty()) return List.of();
+        if (memberIds.size() > 200) throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "200 membres au maximum par relance groupée.");
+        return reminderService.compose(memberIds);
+    }
+
     /** POST /api/reminders : enregistre une relance envoyée depuis le téléphone (wa.me ou SMS). */
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)

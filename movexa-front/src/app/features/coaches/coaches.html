@@ -1,0 +1,164 @@
+<div class="page-sheet coaches-page">
+
+  <!-- ===== EN-TÊTE ===== -->
+  <header class="sheet-header">
+    <div class="co-left">
+      <h1 class="page-title">Coachs</h1>
+      <button type="button" class="btn btn-outline" [disabled]="!hasFilters()" (click)="resetFilters()">Réinitialiser les filtres</button>
+    </div>
+    @if (store.isManager()) {
+      <div class="page-actions">
+        <button type="button" class="btn btn-primary" (click)="edit()">Nouveau coach</button>
+      </div>
+    }
+  </header>
+
+  <!-- ===== DISCIPLINES ENSEIGNÉES (clic = filtre) ===== -->
+  @if (disciplineSummary().length) {
+    <div class="co-disciplines" aria-label="Disciplines enseignées">
+      <span class="help">Disciplines :</span>
+      @for (d of disciplineSummary(); track d[0]) {
+        <button type="button" class="co-chip co-chip--btn" [class.co-chip--on]="disciplineFilter().includes(d[0])" (click)="filterOn(d[0])">
+          {{ d[0] }} <span class="co-chip-count">{{ d[1] }}</span>
+        </button>
+      }
+    </div>
+  }
+
+  <!-- ===== LISTE ===== -->
+  <div class="grid-scroll co-scroll">
+    <div class="co-grid">
+      <div class="grid-row grid-row--head co-head">
+        <input class="input-line input-line--filter" aria-label="Filtrer par nom" placeholder="Coach" [ngModel]="query()" (ngModelChange)="query.set($event)" />
+        <input class="input-line input-line--filter" aria-label="Filtrer par téléphone" placeholder="Téléphone" inputmode="numeric"
+               [ngModel]="phoneQuery()" (ngModelChange)="phoneQuery.set($event)" />
+        <app-multi-filter label="Disciplines" [options]="disciplineOptions()" [(selected)]="disciplineFilter" />
+        <span class="head-label text-right">Membres suivis</span>
+        <app-multi-filter label="Statut" [options]="statusOptions" [(selected)]="statusFilter" />
+        <span></span>
+      </div>
+
+      @for (c of rows(); track c.id) {
+        <div class="grid-row co-row" [class.co-row--off]="!c.active">
+          <span class="co-name">
+            <span class="avatar" aria-hidden="true">{{ initials(c.firstName, c.lastName ?? '') }}</span>
+            <span>
+              <span class="text-strong">{{ fullName(c) }}</span>
+              @if (c.email) { <span class="help co-sub">{{ c.email }}</span> }
+            </span>
+          </span>
+          <span>
+            @if (c.phone) {
+              <a class="co-phone" [href]="whatsappLink(c.phone, 'Bonjour ' + c.firstName + ', ')" target="_blank" rel="noopener" [attr.aria-label]="'Écrire sur WhatsApp à ' + fullName(c)">{{ c.phone }}</a>
+            } @else { — }
+          </span>
+          <span class="co-chips">
+            @for (d of c.disciplines; track d) { <span class="co-chip">{{ d }}</span> } @empty { <span class="help">Non renseignées</span> }
+          </span>
+          <span class="text-right">{{ c.memberCount ?? 0 }}</span>
+          <span class="status"><span class="status-dot" [class.status-dot--success]="c.active" [class.status-dot--neutral]="!c.active"></span>{{ c.active ? 'Actif' : 'Inactif' }}</span>
+          <span class="text-right">
+            @if (store.isManager()) { <button type="button" class="btn btn-outline btn-sm" (click)="edit(c)">Modifier</button> }
+          </span>
+        </div>
+      } @empty {
+        @if (loading()) {
+          <p class="empty">Chargement des coachs…</p>
+        } @else if (loadError()) {
+          <p class="empty">{{ loadError() }} <button type="button" class="btn btn-outline" (click)="load()">Réessayer</button></p>
+        } @else if (coaches().length) {
+          <p class="empty">Aucun coach pour ces filtres.</p>
+        } @else {
+          <p class="empty">Aucun coach pour l’instant.{{ store.isManager() ? ' Ajoutez le premier avec « Nouveau coach ».' : '' }}</p>
+        }
+      }
+    </div>
+  </div>
+
+  <div class="card-foot">{{ rows().length }} coach(s) affiché(s) sur {{ coaches().length }}</div>
+</div>
+
+<!-- ===== POP-UP CRÉATION / MODIFICATION ===== -->
+@if (draft(); as d) {
+  <div class="modal-backdrop" (keydown.escape)="close()">
+    <form class="modal modal--s" role="dialog" aria-modal="true" aria-labelledby="co-title" (ngSubmit)="save()">
+      <header class="modal-head">
+        <div class="modal-head-text">
+          <h2 id="co-title" class="modal-title">{{ d.id ? 'Modifier le coach' : 'Nouveau coach' }}</h2>
+          @if (d.id) { <p class="help">{{ d.memberCount }} membre(s) suivi(s)</p> }
+        </div>
+      </header>
+      <div class="modal-body">
+        @if (formError(); as e) { <div class="alert alert--error" role="alert">{{ e }}</div> }
+
+        <div class="co-pair">
+          <div class="field">
+            <label for="co-first">Prénom *</label>
+            <input id="co-first" name="firstName" class="input-line" maxlength="100" autocomplete="off" [ngModel]="d.firstName" (ngModelChange)="patch({ firstName: $event })" />
+          </div>
+          <div class="field">
+            <label for="co-last">Nom</label>
+            <input id="co-last" name="lastName" class="input-line" maxlength="100" autocomplete="off" [ngModel]="d.lastName" (ngModelChange)="patch({ lastName: $event })" />
+          </div>
+        </div>
+        <div class="co-pair">
+          <div class="field">
+            <label for="co-phone">Téléphone</label>
+            <input id="co-phone" name="phone" class="input-line" type="tel" maxlength="30" placeholder="Ex. 97 00 11 22" [ngModel]="d.phone" (ngModelChange)="patch({ phone: $event })" />
+          </div>
+          <div class="field">
+            <label for="co-email">E-mail</label>
+            <input id="co-email" name="email" class="input-line" type="email" maxlength="150" [ngModel]="d.email" (ngModelChange)="patch({ email: $event })" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="co-disc">Disciplines</label>
+          <div class="co-tags">
+            @for (x of d.disciplines; track x) {
+              <span class="co-chip co-chip--removable">{{ x }}
+                <button type="button" class="co-chip-x" [attr.aria-label]="'Retirer ' + x" (click)="removeDiscipline(x)">×</button>
+              </span>
+            }
+            <input id="co-disc" name="discipline" class="co-tags-input" list="co-disc-list" autocomplete="off"
+                   [placeholder]="d.disciplines.length ? 'Ajouter…' : 'Ex. Musculation, Yoga…'"
+                   [ngModel]="disciplineInput()" (ngModelChange)="disciplineInput.set($event)"
+                   (keydown)="onDisciplineKey($event)" (blur)="addDiscipline()" />
+            <datalist id="co-disc-list">
+              @for (s of suggestions(); track s) { <option [value]="s"></option> }
+            </datalist>
+          </div>
+          <span class="help">Entrée ou virgule pour ajouter une discipline.</span>
+          @if (suggestions().length) {
+            <div class="co-suggest">
+              @for (s of suggestions().slice(0, 8); track s) {
+                <button type="button" class="co-chip co-chip--btn" (click)="addDiscipline(s)">+ {{ s }}</button>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="field">
+          <label for="co-notes">Notes</label>
+          <textarea id="co-notes" name="notes" class="textarea-box" rows="2" maxlength="300" placeholder="Horaires, certifications…"
+                    [ngModel]="d.notes" (ngModelChange)="patch({ notes: $event })"></textarea>
+        </div>
+
+        <label class="checkbox-label"><input type="checkbox" name="active" [ngModel]="d.active" (ngModelChange)="patch({ active: $event })" /> Fait partie de l’équipe (actif)</label>
+      </div>
+      <footer class="modal-foot co-foot">
+        @if (d.id) {
+          <button type="button" class="btn btn-outline co-delete" [disabled]="saving()" (click)="confirmDelete.set(true)">Supprimer</button>
+        }
+        <span class="co-spacer"></span>
+        <button type="button" class="btn btn-outline" [disabled]="saving()" (click)="close()">Annuler</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">{{ saving() ? 'Enregistrement…' : 'Enregistrer' }}</button>
+      </footer>
+    </form>
+  </div>
+}
+
+@if (confirmDelete()) {
+  <app-confirm-dialog title="Supprimer ce coach ?" [message]="deleteMessage()" confirmLabel="Supprimer définitivement"
+                      [busy]="deleting()" (confirmed)="remove()" (cancelled)="confirmDelete.set(false)" />
+}

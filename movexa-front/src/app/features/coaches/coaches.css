@@ -1,0 +1,200 @@
+/* ================================================================
+   COACHS — équipe, disciplines, membres suivis
+   ================================================================ */
+
+/* Page à hauteur d'écran : en-tête et filtres figés, la liste défile */
+.coaches-page {
+  height: 100%;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+.co-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.co-disciplines {
+  padding: 0 var(--space-5) var(--space-3);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.co-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.co-grid {
+  min-width: 920px;
+}
+
+.co-grid .grid-row {
+  grid-template-columns: 1.6fr 1fr 2fr 0.8fr 0.9fr 0.8fr;
+}
+
+.co-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-surface);
+}
+
+.head-label {
+  line-height: 36px;
+}
+
+.co-row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.co-row--off {
+  color: var(--color-text-muted);
+}
+
+.co-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.co-sub {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.co-phone {
+  color: var(--color-text);
+}
+
+.co-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.co-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.co-chip--btn {
+  min-height: 32px;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.co-chip--btn:hover {
+  border-color: var(--color-primary);
+}
+
+.co-chip--on {
+  border-color: var(--color-primary);
+  background: var(--color-surface-selected);
+  font-weight: var(--font-weight-bold);
+}
+
+.co-chip-count {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-bold);
+}
+
+.co-chip--removable {
+  padding-right: 2px;
+}
+
+.co-chip-x {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.co-chip-x:hover {
+  color: var(--color-danger);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-6) var(--space-5);
+  color: var(--color-text-muted);
+}
+
+/* ---- Pop-up ---- */
+.co-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-4);
+}
+
+.co-tags {
+  min-height: 44px;
+  padding: 6px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid var(--color-input-line);
+}
+
+.co-tags:focus-within {
+  border-bottom-color: var(--color-primary);
+}
+
+.co-tags-input {
+  flex: 1 1 120px;
+  min-width: 120px;
+  height: 30px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.co-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: var(--space-2);
+}
+
+.co-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.co-spacer {
+  flex: 1 1 auto;
+}
+
+.co-delete {
+  color: var(--color-danger-strong);
+  border-color: var(--color-danger-strong);
+}

@@ -33,7 +33,8 @@ public interface MemberMapper {
      * Recopie le formulaire dans un membre existant (et son user).
      * Seuls l'identité, le contact et les notes viennent du formulaire : la formule, les dates
      * et le QR code sont gérés par le serveur (encaissements, pointage).
-     * Les champs absents du formulaire actuel (date de naissance, genre, coach…) gardent leur valeur.
+     * Les champs absents du formulaire actuel (date de naissance, genre…) gardent leur valeur.
+     * Le coach est posé par MemberService (vérification de la fiche coach).
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "memberNumber", ignore = true)
@@ -47,7 +48,8 @@ public interface MemberMapper {
     @Mapping(target = "archived", ignore = true)
     @Mapping(target = "status", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "autoRenew", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    @Mapping(target = "coach", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "coach", ignore = true)
+    @Mapping(target = "coachId", ignore = true)
     @Mapping(target = "program", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "user.id", ignore = true)
     @Mapping(target = "user.firstName", source = "firstName")

@@ -44,7 +44,7 @@ export class Login {
       .subscribe({
         next: () => {
           this.loading.set(false);
-          this.router.navigate(['/dashboard']);
+          this.router.navigate(['/reception']);
         },
         error: (err: HttpErrorResponse) => {
           this.loading.set(false);

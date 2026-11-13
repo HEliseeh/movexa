@@ -50,6 +50,10 @@ public class Member implements Serializable {
     @Column(name = "coach", length = 100)
     private String coach;
 
+    /** Fiche du coach suivi (coach = son nom recopié pour l'affichage). Null = pas de coach. */
+    @Column(name = "coach_id")
+    private Long coachId;
+
     @Size(max = 150)
     @Column(name = "program", length = 150)
     private String program;

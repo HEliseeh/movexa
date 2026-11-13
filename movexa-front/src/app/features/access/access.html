@@ -109,11 +109,22 @@
 
   <!-- ===== JOURNAL DU JOUR ===== -->
   <section class="card card--flush">
-    <div class="card-head"><h2 class="card-title">Entrées du jour</h2></div>
+    <div class="card-head">
+      <h2 class="card-title">Entrées du jour</h2>
+      @if (journalFiltered()) {
+        <span class="help">{{ filteredRows().length }} sur {{ rows().length }} · <button type="button" class="link-btn" (click)="resetJournalFilters()">Effacer les filtres</button></span>
+      }
+    </div>
     <div class="grid-scroll">
       <div class="ac-journal">
-        <div class="grid-row grid-row--head"><span>Heure</span><span>Membre</span><span>Moyen</span><span>Résultat</span><span>Envoi</span></div>
-        @for (r of rows(); track r.key) {
+        <div class="grid-row grid-row--head">
+          <input class="input-line input-line--filter" aria-label="Filtrer par heure" placeholder="Heure" [ngModel]="timeFilter()" (ngModelChange)="timeFilter.set($event)" />
+          <input class="input-line input-line--filter" aria-label="Filtrer par membre" placeholder="Membre" [ngModel]="nameFilter()" (ngModelChange)="nameFilter.set($event)" />
+          <app-multi-filter label="Moyen" [options]="methodOptions" [(selected)]="methodFilter" />
+          <app-multi-filter label="Résultat" [options]="resultOptions" [(selected)]="resultFilter" />
+          <app-multi-filter label="Envoi" [options]="syncOptions" [(selected)]="syncFilter" />
+        </div>
+        @for (r of filteredRows(); track r.key) {
           <div class="grid-row">
             <span>{{ r.time }}</span>
             <span class="text-strong">{{ r.name }}</span>
@@ -125,7 +136,7 @@
             <span [class.ac-pending]="r.pending">{{ r.pending ? 'En attente' : 'Synchronisé' }}</span>
           </div>
         } @empty {
-          <p class="empty">Aucune entrée pour l’instant.</p>
+          <p class="empty">{{ rows().length ? 'Aucune entrée pour ces filtres.' : 'Aucune entrée pour l’instant.' }}</p>
         }
       </div>
     </div>

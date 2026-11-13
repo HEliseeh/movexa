@@ -8,6 +8,7 @@ import com.mycompany.myapp.domain.Reminder;
 import com.mycompany.myapp.domain.enumeration.PaymentMethod;
 import com.mycompany.myapp.domain.enumeration.ReminderChannel;
 import com.mycompany.myapp.domain.enumeration.ReminderRule;
+import com.mycompany.myapp.domain.enumeration.SubscriptionState;
 import com.mycompany.myapp.repository.MemberRepository;
 import com.mycompany.myapp.repository.PaymentRepository;
 import com.mycompany.myapp.repository.PlanRepository;
@@ -21,6 +22,7 @@ import com.mycompany.myapp.web.rest.errors.NotFoundException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -91,6 +93,58 @@ public class ReminderService {
         addRule(items, done, prices, s, ReminderRule.AFTER_7, today.minusDays(30), today.minusDays(7), s.isReminderAfter7Sms(), s.isReminderAfter7Whatsapp());
         items.sort(Comparator.comparing(ReminderQueueItem::targetEndDate));
         return items;
+    }
+
+    /**
+     * Relance manuelle des membres cochés dans la liste : même message que la relance automatique,
+     * la règle étant déduite de la date de fin. Sont écartés (même règle que l'écran Membres) :
+     * les archivés, les membres sans téléphone, sans abonnement ou dont l'abonnement est encore actif.
+     */
+    @Transactional(readOnly = true)
+    public List<ReminderQueueItem> compose(List<Long> memberIds) {
+        GymSettings s = settingsService.get();
+        LocalDate today = Dates.today();
+        Map<String, Long> prices = planPrices();
+        boolean anyWhatsapp =
+            s.isReminderBefore7Whatsapp() || s.isReminderBefore1Whatsapp() || s.isReminderAfter1Whatsapp() || s.isReminderAfter7Whatsapp();
+        boolean anySms = s.isReminderBefore7Sms() || s.isReminderBefore1Sms() || s.isReminderAfter1Sms() || s.isReminderAfter7Sms();
+        ReminderChannel channel = anyWhatsapp || !anySms ? ReminderChannel.WHATSAPP : ReminderChannel.SMS;
+
+        List<ReminderQueueItem> items = new ArrayList<>();
+        for (Member m : memberRepository.findAllWithUserByIdIn(memberIds)) {
+            if (!isRemindable(m)) continue;
+            long days = ChronoUnit.DAYS.between(today, m.getExpiryDate());
+            ReminderRule rule = days > 1
+                ? ReminderRule.BEFORE_7
+                : days >= 0 ? ReminderRule.BEFORE_1 : days > -7 ? ReminderRule.AFTER_1 : ReminderRule.AFTER_7;
+            boolean expired = days < 0;
+            Long amount = m.getPlan() != null ? prices.get(m.getPlan()) : null;
+            items.add(
+                new ReminderQueueItem(
+                    m.getId(),
+                    MemberViews.fullName(m),
+                    m.getUser().getPhone(),
+                    rule,
+                    channel,
+                    m.getExpiryDate(),
+                    m.getPlan(),
+                    amount,
+                    expired,
+                    message(m, s, amount, expired)
+                )
+            );
+        }
+        items.sort(Comparator.comparing(ReminderQueueItem::targetEndDate));
+        return items;
+    }
+
+    /** Un membre peut être relancé : actif dans la base, joignable, et en fin ou après la fin d'abonnement. */
+    private boolean isRemindable(Member m) {
+        if (m.isArchived() || m.getExpiryDate() == null || m.getUser() == null) return false;
+        String phone = m.getUser().getPhone();
+        if (phone == null || phone.replaceAll("\\D", "").length() < 8) return false;
+        SubscriptionState state = settingsService.stateOf(m.getExpiryDate());
+        return state == SubscriptionState.EXPIRING_SOON || state == SubscriptionState.EXPIRED;
     }
 
     /** Enregistre une relance envoyée (le message est parti par WhatsApp ou SMS depuis le téléphone). */

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        Coachs de la salle et leurs disciplines.
+        Le membre garde son champ texte « coach » (nom affiché) et gagne coach_id (lien vers la fiche).
+    -->
+    <changeSet id="20261113000001-1" author="elisee">
+        <createTable tableName="coach">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="first_name" type="varchar(100)"><constraints nullable="false"/></column>
+            <column name="last_name" type="varchar(100)"/>
+            <column name="phone" type="varchar(30)"/>
+            <column name="email" type="varchar(150)"/>
+            <column name="notes" type="varchar(300)"/>
+            <column name="active" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="created_at" type="timestamp"><constraints nullable="false"/></column>
+        </createTable>
+
+        <createTable tableName="coach_discipline">
+            <column name="coach_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="discipline" type="varchar(60)"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="coach_discipline" baseColumnNames="coach_id" constraintName="fk_coach_discipline_coach"
+                                 referencedTableName="coach" referencedColumnNames="id" onDelete="CASCADE"/>
+        <createIndex tableName="coach_discipline" indexName="idx_coach_discipline_coach"><column name="coach_id"/></createIndex>
+
+        <addColumn tableName="member">
+            <column name="coach_id" type="bigint"/>
+        </addColumn>
+        <!-- Supprimer un coach ne supprime pas ses membres : ils n'ont simplement plus de coach -->
+        <addForeignKeyConstraint baseTableName="member" baseColumnNames="coach_id" constraintName="fk_member_coach"
+                                 referencedTableName="coach" referencedColumnNames="id" onDelete="SET NULL"/>
+        <createIndex tableName="member" indexName="idx_member_coach"><column name="coach_id"/></createIndex>
+
+        <!-- Reprise de l'existant : chaque nom de coach déjà saisi sur un membre devient une fiche coach -->
+        <sql>
+            INSERT INTO coach (first_name, last_name, active, created_at)
+            SELECT DISTINCT split_part(trim(coach), ' ', 1),
+                   NULLIF(trim(substr(trim(coach), length(split_part(trim(coach), ' ', 1)) + 1)), ''),
+                   true, CURRENT_TIMESTAMP
+              FROM member
+             WHERE coach IS NOT NULL AND trim(coach) &lt;&gt; '';
+            UPDATE member m SET coach_id = c.id
+              FROM coach c
+             WHERE trim(m.coach) = trim(c.first_name || COALESCE(' ' || c.last_name, ''));
+        </sql>
+    </changeSet>
+
+    <!-- Données de démonstration : quelques disciplines pour les coachs repris -->
+    <changeSet id="20261113000001-2-data" author="elisee" context="faker">
+        <sql>
+            INSERT INTO coach_discipline (coach_id, discipline)
+            SELECT c.id, d.discipline
+              FROM (SELECT id, row_number() OVER (ORDER BY id) AS n FROM coach) c
+              JOIN (VALUES (1, 'Musculation'), (1, 'Cross training'), (2, 'Cardio'), (2, 'Boxe'),
+                           (3, 'Yoga'), (3, 'Pilates'), (4, 'Zumba'), (4, 'Stretching')) AS d(n, discipline)
+                ON ((c.n - 1) % 4) + 1 = d.n;
+        </sql>
+    </changeSet>
+</databaseChangeLog>

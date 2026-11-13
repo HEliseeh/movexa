@@ -15,7 +15,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { debounceTime, distinctUntilChanged, map, of, startWith, switchMap } from 'rxjs';
-import { GymSettings, MemberLite, PaymentMethod, Plan } from '@core/api/api.models';
+import { Coach, GymSettings, MemberLite, PaymentMethod, Plan } from '@core/api/api.models';
 import { MembersService, MemberDto, MemberPayload } from '@core/api/members.service';
 import { MovexaApi } from '@core/api/movexa-api.service';
 import { ConfirmDialog } from '@shared/confirm-dialog/confirm-dialog';
@@ -81,6 +81,8 @@ export class MemberForm implements OnInit {
 
   readonly isEdit = computed(() => this.member() !== null);
   readonly plans = signal<Plan[]>([]);
+  /** Coachs proposés : les actifs, plus le coach actuel du membre s'il est devenu inactif */
+  readonly coaches = signal<Coach[]>([]);
   readonly settings = signal<GymSettings | null>(null);
   readonly method = signal<PaymentMethod>('CASH');
 
@@ -106,6 +108,7 @@ export class MemberForm implements OnInit {
     email: ['', [email]],
     notes: ['', [Validators.maxLength(300)]],
     planId: [0],
+    coachId: [0],
     startDate: [todayIso()],
   });
 
@@ -179,7 +182,7 @@ export class MemberForm implements OnInit {
     const m = this.member();
     const pre = this.prefill();
     if (m) {
-      this.form.patchValue({ phone: m.phone ?? '', firstName: m.firstName, lastName: m.lastName, email: m.email ?? '', notes: m.notes ?? '' });
+      this.form.patchValue({ phone: m.phone ?? '', firstName: m.firstName, lastName: m.lastName, email: m.email ?? '', notes: m.notes ?? '', coachId: m.coachId ?? 0 });
     } else if (pre) {
       this.form.patchValue({ phone: pre.phone ?? '', firstName: pre.firstName ?? '', lastName: pre.lastName ?? '' });
     }
@@ -187,6 +190,10 @@ export class MemberForm implements OnInit {
       this.settings.set(s);
       const first = this.methods().find(x => x.enabled);
       if (first) this.method.set(first.id);
+    });
+    this.api.coaches().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: list => this.coaches.set(list.filter(c => c.active || c.id === m?.coachId)),
+      error: () => {},
     });
     if (!m) {
       this.api.plans().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(plans => {
@@ -220,6 +227,7 @@ export class MemberForm implements OnInit {
       lastName: v.lastName.trim(),
       email: v.email.trim() || null,
       notes: v.notes.trim() || null,
+      coachId: +v.coachId || null,
     };
     const existing = this.member();
     if (!existing) {
